@@ -117,4 +117,3 @@ class Spotify:
             name = month + " '" + year[2:]
             self.create_playlist(name)
         logging.info("Ended monthly playlist creation")
-        
