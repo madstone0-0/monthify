@@ -117,15 +117,4 @@ class Spotify:
             name = month + " '" + year[2:]
             self.create_playlist(name)
         logging.info("Ended monthly playlist creation")
-
-
-if __name__ == "__main__":
-    controller = Spotify()
-    # controller.list_playlist_tracks("4nMqdVmQwRoER0ik6Tyq2y")
-    # controller.list_user_saved_playlists()
-    # controller.create_playlist("PeePee")
-    # controller.list_user_saved_tracks()
-    # controller.get_saved_track_info()
-    # controller.print_saved_track_info()
-    # controller.get_playlist_names_names()
-    # controller.create_monthly_playlists()
+        
