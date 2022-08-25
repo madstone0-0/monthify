@@ -8,6 +8,7 @@ from date_parser import extract_month_and_year
 import structlog
 import logging
 from rich.console import Console
+from datetime import datetime
 
 MAX_TRIES = 3
 MAX_RESULTS = 10000
@@ -175,7 +176,12 @@ class Spotify:
             month, year = extract_month_and_year(track.added_at)
             logger.info("Playlist name", month=month, year=year)
             self.playlist_names.append((month, year))
-        self.playlist_names = [*set(self.playlist_names)]
+        unsorted_playlist_names = [*set(self.playlist_names)]
+        self.playlist_names = sorted(
+            unsorted_playlist_names,
+            key=lambda d: (d[1], datetime.strptime(d[0], "%B")),
+            reverse=True,
+        )
         logger.info("Removing duplicate playlist names")
         logger.info("Final list", playlist_names=self.playlist_names)
 
