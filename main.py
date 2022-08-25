@@ -11,7 +11,7 @@ if __name__ == "__main__":
     controller.get_playlist_names_names()
 
     # Create playlists based on month and year
-    controller.create_monthly_playlists()
+    # controller.create_monthly_playlists()
 
     # Retrieve playlist ids of created playlists
     controller.get_monthly_playlist_ids()
