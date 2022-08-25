@@ -7,7 +7,7 @@ from track import Track
 from date_parser import extract_month_and_year
 
 MAX_TRIES = 3
-MAX_RESULTS = 2000
+MAX_RESULTS = 10000
 
 
 class Spotify:
