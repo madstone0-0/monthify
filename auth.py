@@ -258,7 +258,10 @@ class Spotify:
             )
         for month, year, p_id in self.playlist_names_with_id:
             logger.info("Sorting into playlist", playlist=(month, year[2:]))
-            console.print("Sorting into playlist %s '%s https://open.spotify.com/playlist/%s" % (month, year[2:], p_id))
+            console.print(
+                "Sorting into playlist %s '%s https://open.spotify.com/playlist/%s"
+                % (month, year[2:], p_id)
+            )
             console.rule()
             track_uris = []
             for track in self.track_list:
