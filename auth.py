@@ -20,7 +20,7 @@ class Spotify:
     def __init__(self):
         self.client_secret = "e775fe5341af41599eb2c4c639ec0702"
         self.client_id = "fa28a21045ed408bb2858a9439cd1813"
-        self.redirect_uri = "https://open.spotify.com/collection/playlists"
+        self.redirect_uri = "http:/localhost/"
         self.scope_read = "user-library-read"
         self.scope_read_private_playlist = "playlist-read-private"
         self.scope_modify_private_playlist = "playlist-modify-private"
