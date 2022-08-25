@@ -15,7 +15,7 @@ MAX_RESULTS = 10000
 
 structlog.stdlib.recreate_defaults(log_level=None)
 logging.basicConfig(
-    filename="monthly_playlist.log", encoding="utf-8", level=logging.INFO
+    filename="monthly_playlist_%s.log" % (datetime.now().strftime("%d_%m_%Y_%H_%M_%S")), encoding="utf-8", level=logging.INFO
 )
 logger = structlog.get_logger(__name__)
 console = Console()
