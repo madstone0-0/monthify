@@ -115,7 +115,7 @@ class Spotify:
         for _, item in enumerate(playlists):
             playlist_name = str(item["name"]).encode("utf-8").lower()
             to_be_added_name = name.encode("utf-8").lower()
-            logger.info("Playlist checking", playlist_name=playlist_name, to_be_added_name=to_be_added_name)
+            # logger.info("Playlist checking", playlist_name=playlist_name, to_be_added_name=to_be_added_name)
             if playlist_name == to_be_added_name:
                 count += 1
                 print("Playlist %s already exists" % name)
@@ -144,7 +144,7 @@ class Spotify:
             track = item["track"]
             # logger.info("Assigning values to new Track type instance")
             logger.info("Track type", title=track["name"], artist=track["artists"][0]["name"],
-                         added_at=item["added_at"], uri=track["uri"])
+                        added_at=item["added_at"], uri=track["uri"])
             self.track_list.append(
                 Track(
                     track["name"],
@@ -180,10 +180,10 @@ class Spotify:
         for month, year in self.playlist_names:
             name = month + " '" + year[2:]
             self.create_playlist(name)
-            logger.info("Created playlist", name=name)
+            # logger.info("Created playlist", name=name)
 
     def add_to_playlist(self, track_uris: list, playlist_id):
-        logger.info("Attempting to add tracks to playlist", tracks=track_uris, playlist=playlist_id)
+        logger.info("Attempting to add tracks to playlist", tracks=str(track_uris), playlist=playlist_id)
         playlist_items = self.get_playlist_items(playlist_id)
         to_be_added_uris = []
         playlist_uris = []
@@ -208,10 +208,10 @@ class Spotify:
                 )
                 to_be_added_uris.append(track_uri)
         if not to_be_added_uris:
-            logger.info("No track to add to playlist", tracks=to_be_added_uris, playlist=playlist_id)
+            # logger.info("No track to add to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             print("No tracks to add")
         else:
-            logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
+            # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             self.sp.playlist_add_items(playlist_id=playlist_id, items=to_be_added_uris)
         logger.info("Ended track addition")
 
@@ -238,7 +238,8 @@ class Spotify:
             track_uris = []
             for track in self.track_list:
                 if track.parse_track_month() == (month, year):
-                    logger.info("Considered adding track to playlist", track=track.title)
+                    logger.info("Considered adding track to playlist", title=track.title, artist=track.artist,
+                                uri=track.uri)
                     track_uris.append(track.uri)
             if not track_uris:
                 break
