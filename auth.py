@@ -15,7 +15,9 @@ MAX_RESULTS = 10000
 
 structlog.stdlib.recreate_defaults(log_level=None)
 logging.basicConfig(
-    filename="monthly_playlist_%s.log" % (datetime.now().strftime("%d_%m_%Y_%H_%M_%S")), encoding="utf-8", level=logging.INFO
+    filename="monthly_playlist_%s.log" % (datetime.now().strftime("%d_%m_%Y_%H_%M_%S")),
+    encoding="utf-8",
+    level=logging.INFO,
 )
 logger = structlog.get_logger(__name__)
 console = Console()
@@ -150,6 +152,7 @@ class Spotify:
     def get_saved_track_info(self):
         tracks = self.get_user_saved_tracks()
         logger.info("Retrieving saved track info")
+        console.print("Retrieving user saved tracks")
         # logger.info("Saved tracks", tracks=tracks)
         for _, item in enumerate(tracks):
             track = item["track"]
@@ -169,9 +172,11 @@ class Spotify:
                     track["uri"],
                 )
             )
+        console.print("Finished retrieving user saved tracks")
 
     def get_playlist_names_names(self):
         logger.info("Generating playlist names")
+        console.print("Retrieving relevant playlist information")
         for track in self.track_list:
             month, year = extract_month_and_year(track.added_at)
             logger.info("Playlist name", month=month, year=year)
@@ -199,6 +204,7 @@ class Spotify:
                         name=(month + " '" + year[2:]),
                         id=item["id"],
                     )
+        console.print("Finished retrieving relevant playlist information")
 
     def create_monthly_playlists(self):
         logger.info("Creating playlists")
@@ -207,10 +213,10 @@ class Spotify:
             self.create_playlist(name)
             # logger.info("Created playlist", name=name)
 
-    def add_to_playlist(self, track_uris: list, playlist_id):
+    def add_to_playlist(self, tracks_info: list, playlist_id):
         logger.info(
             "Attempting to add tracks to playlist",
-            tracks=str(track_uris),
+            tracks=str(tracks_info),
             playlist=playlist_id,
         )
         playlist_items = self.get_playlist_items(playlist_id)
@@ -221,24 +227,40 @@ class Spotify:
             track = item["track"]
             playlist_uris.append(track["uri"])
 
-        for track_uri in track_uris:
-            log = logger.bind(track=track_uri, playlist=playlist_id)
+        for track_title, track_artist, track_uri in tracks_info:
+            log = logger.bind(
+                track_title=track_title,
+                track_artist=track_artist,
+                track_uri=track_uri,
+                playlist=playlist_id,
+            )
             if track_uri in playlist_uris:
                 log.info("Track already in playlist")
                 console.print(
-                    "Track [bold green]https://open.%s[/bold green] already exists in the playlist"
-                    % (track_uri.replace(":", "/").replace("spotify", "spotify.com"))
+                    "[bold red][-][/bold red]   [link=https://open.%s][cyan]%s by %s[/cyan][/link] already exists "
+                    "in the playlist "
+                    % (
+                        (track_uri.replace(":", "/").replace("spotify", "spotify.com")),
+                        track_title,
+                        track_artist,
+                    )
                 )
             else:
                 log.info("Track will be added to playlist")
                 console.print(
-                    "Track with id [bold green]https://open.%s[/bold green] will be added to the playlist"
-                    % (track_uri.replace(":", "/").replace("spotify", "spotify.com"))
+                    "[bold green][+][/bold green]  [link=https://open.%s][bold green]%s by %s[/bold green][/link] "
+                    "will be "
+                    "added to the playlist "
+                    % (
+                        (track_uri.replace(":", "/").replace("spotify", "spotify.com")),
+                        track_title,
+                        track_artist,
+                    )
                 )
                 to_be_added_uris.append(track_uri)
         if not to_be_added_uris:
             # logger.info("No track to add to playlist", tracks=to_be_added_uris, playlist=playlist_id)
-            console.print("No tracks to add", style="bold red")
+            console.print("No tracks to add\n", style="bold red")
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             self.sp.playlist_add_items(playlist_id=playlist_id, items=to_be_added_uris)
@@ -249,6 +271,7 @@ class Spotify:
             playlist_names=self.playlist_names_with_id, tracks=self.track_list
         )
         log.info("Started sort")
+        console.print("Beginning playlist sort")
         try:
             if len(self.playlist_names) != len(self.playlist_names_with_id):
                 raise Exception
@@ -269,7 +292,7 @@ class Spotify:
                 % (month, year[2:], p_id)
             )
             console.rule()
-            track_uris = []
+            tracks_info = []
             for track in self.track_list:
                 if track.parse_track_month() == (month, year):
                     logger.info(
@@ -278,11 +301,12 @@ class Spotify:
                         artist=track.artist,
                         uri=track.uri,
                     )
-                    track_uris.append(track.uri)
-            if not track_uris:
+                    tracks_info.append((track.title, track.artist, track.uri))
+            if not tracks_info:
                 break
             else:
                 logger.info(
-                    "Adding tracks to playlist", tracks=track_uris, playlist=p_id
+                    "Adding tracks to playlist", tracks=tracks_info, playlist=p_id
                 )
-                self.add_to_playlist(track_uris, p_id)
+                self.add_to_playlist(tracks_info, p_id)
+        console.print("Finished playlist sort")
