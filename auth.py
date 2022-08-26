@@ -237,7 +237,7 @@ class Spotify:
             if track_uri in playlist_uris:
                 log.info("Track already in playlist")
                 console.print(
-                    "[bold green][-][/bold green]   [link=https://open.%s][cyan]%s by %s[/cyan][/link] already exists "
+                    "[bold red][-][/bold red]   [link=https://open.%s][cyan]%s by %s[/cyan][/link] already exists "
                     "in the playlist "
                     % (
                         (track_uri.replace(":", "/").replace("spotify", "spotify.com")),
@@ -248,7 +248,8 @@ class Spotify:
             else:
                 log.info("Track will be added to playlist")
                 console.print(
-                    "[bold red][+][/bold red]  [link=https://open.%s][bold green]%s by %s[/bold green][/link] will be "
+                    "[bold green][+][/bold green]  [link=https://open.%s][bold green]%s by %s[/bold green][/link] "
+                    "will be "
                     "added to the playlist "
                     % (
                         (track_uri.replace(":", "/").replace("spotify", "spotify.com")),
