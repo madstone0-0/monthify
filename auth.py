@@ -9,6 +9,7 @@ import structlog
 import logging
 from rich.console import Console
 from datetime import datetime
+import os
 
 MAX_TRIES = 3
 MAX_RESULTS = 10000
@@ -22,6 +23,7 @@ logging.basicConfig(
 )
 logger = structlog.get_logger(__name__)
 console = Console()
+existing_playlists_file = "existing_playlists_file.dat"
 
 
 class Spotify:
@@ -38,8 +40,18 @@ class Spotify:
             self.scope_modify_private_playlist,
         )
 
+        self.current_username = self.sp.current_user()["uri"][13:]
         self.track_list = []
         self.playlist_names = []
+        if os.path.exists(existing_playlists_file):
+            if os.stat(existing_playlists_file).st_size != 0:
+                with open(existing_playlists_file, "r") as f:
+                    self.already_created_playlists = list(f.read().splitlines())
+            else:
+                self.already_created_playlists = []
+        else:
+            self.already_created_playlists = []
+
         self.playlist_names_with_id = []
 
     def spotipy_init(self, *scope):
@@ -133,6 +145,7 @@ class Spotify:
             if playlist_name == to_be_added_name:
                 count += 1
                 console.print("Playlist %s already exists" % name)
+                self.already_created_playlists.append(name)
                 logger.info("Playlist already exists", name=name)
                 return
         if count != 0:
@@ -141,7 +154,7 @@ class Spotify:
             console.print("Creating playlist %s" % name)
             logger.info("Creating playlist", name=name)
             sp.user_playlist_create(
-                user="8vx0z9rwpse4fzr62po8sca1r",
+                user=self.current_username,
                 name=name,
                 public=False,
                 collaborative=False,
@@ -210,9 +223,15 @@ class Spotify:
     def create_monthly_playlists(self):
         logger.info("Creating playlists")
         for month, year in self.playlist_names:
-            name = month + " '" + year[2:]
-            self.create_playlist(name)
+            if str(month + " '" + year[2:]) in self.already_created_playlists:
+                console.print("%s playlist already exists" % (month + " '" + year[2:]))
+            else:
+                name = month + " '" + year[2:]
+                self.create_playlist(name)
             # logger.info("Created playlist", name=name)
+        with open(existing_playlists_file, "w") as f:
+            if ("\n".join(str(self.already_created_playlists))) != f.read():
+                f.write("\n".join(self.already_created_playlists))
 
     def add_to_playlist(self, tracks_info: list, playlist_id):
         logger.info(
