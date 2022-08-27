@@ -145,7 +145,7 @@ class Spotify:
             if playlist_name == to_be_added_name:
                 count += 1
                 console.print("Playlist %s already exists" % name)
-                self.already_created_playlists.append(name)
+                self.already_created_playlists_inter.append(name)
                 logger.info("Playlist already exists", name=name)
                 return
         if count != 0:
@@ -162,6 +162,7 @@ class Spotify:
             )
             console.print("Added %s playlist" % name)
             logger.info("Added playlist", name=name)
+        self.already_created_playlists = already_created_playlists
 
     def get_saved_track_info(self):
         tracks = self.get_user_saved_tracks()
