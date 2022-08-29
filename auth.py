@@ -136,6 +136,7 @@ class Spotify:
     def create_playlist(self, name):
         sp = self.sp
         playlists = self.get_user_saved_playlists()
+        already_created_playlists = []
         count = 0
         logger.info("Playlist creation called", name=name)
         for _, item in enumerate(playlists):
@@ -145,7 +146,7 @@ class Spotify:
             if playlist_name == to_be_added_name:
                 count += 1
                 console.print("Playlist %s already exists" % name)
-                self.already_created_playlists.append(name)
+                already_created_playlists.append(name)
                 logger.info("Playlist already exists", name=name)
                 return
         if count != 0:
@@ -162,6 +163,7 @@ class Spotify:
             )
             console.print("Added %s playlist" % name)
             logger.info("Added playlist", name=name)
+        self.already_created_playlists = already_created_playlists
 
     def get_saved_track_info(self):
         tracks = self.get_user_saved_tracks()
