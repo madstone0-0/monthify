@@ -5,6 +5,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from track import Track
 from date_parser import extract_month_and_year
+from date_parser import sort_chronologically
 import structlog
 import logging
 from rich.console import Console
@@ -229,11 +230,7 @@ ___  ___            _   _     _  __
             logger.info("Playlist name", month=month, year=year)
             self.playlist_names.append((month, year))
         unsorted_playlist_names = [*set(self.playlist_names)]
-        self.playlist_names = sorted(
-            unsorted_playlist_names,
-            key=lambda d: (d[1], datetime.strptime(d[0], "%B")),
-            reverse=True,
-        )
+        self.playlist_names = sort_chronologically(unsorted_playlist_names)
         logger.info("Removing duplicate playlist names")
         logger.info("Final list", playlist_names=self.playlist_names)
 
