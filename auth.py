@@ -32,7 +32,7 @@ class Spotify:
     def __init__(self):
         self.client_secret = "e775fe5341af41599eb2c4c639ec0702"
         self.client_id = "fa28a21045ed408bb2858a9439cd1813"
-        self.redirect_uri = "http:/localhost/"
+        self.redirect_uri = "https://open.spotify.com/"
         self.scope_read = "user-library-read"
         self.scope_read_private_playlist = "playlist-read-private"
         self.scope_modify_private_playlist = "playlist-modify-private"
@@ -57,15 +57,13 @@ class Spotify:
         if os.path.exists(last_run_file):
             if os.stat(last_run_file).st_size != 0:
                 with open(last_run_file, "r") as f:
-                    self.last_run = datetime.strptime(f.read(), last_run_format)
+                    self.last_run = f.read()
             else:
                 self.last_run = ""
         else:
             self.last_run = ""
 
         self.playlist_names_with_id = []
-
-        self.update_last_run()
 
     def spotipy_init(self, *scope):
         return spotipy.Spotify(
@@ -250,8 +248,19 @@ class Spotify:
                     name = month + " '" + year[2:]
                     self.create_playlist(name)
         else:
-            console.print("Playlist creation skipped because playlists already exist")
-        self.already_created_playlists = self.already_created_playlists_inter
+            console.print("Playlist generation has already occurred this month, do you still want to generate "
+                          "playlists? (yes/no)")
+            if not console.input("> ").lower().startswith("y"):
+                console.print("Playlist generation skipped")
+            else:
+                for month, year in self.playlist_names:
+                    if str(month + " '" + year[2:]) in self.already_created_playlists:
+                        console.print("%s playlist already exists" % (month + " '" + year[2:]))
+                    else:
+                        name = month + " '" + year[2:]
+                        self.create_playlist(name)
+        if not self.already_created_playlists:
+            self.already_created_playlists = self.already_created_playlists_inter
         with open(existing_playlists_file, "w") as f:
             f.write("\n".join(self.already_created_playlists))
 
