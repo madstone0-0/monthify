@@ -1,29 +1,33 @@
 #!python3
 # encoding=utf-8
 
-import spotipy
+from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 from track import Track
 from date_parser import extract_month_and_year
 from date_parser import sort_chronologically
-import structlog
-import logging
+from structlog import get_logger
+from structlog.stdlib import recreate_defaults
+from logging import basicConfig
+from logging import INFO
 from rich.console import Console
 from datetime import datetime
-import os
+from os import makedirs
+from os.path import exists
+from os import stat
 
 MAX_TRIES = 3
 MAX_RESULTS = 10000
 
-structlog.stdlib.recreate_defaults(log_level=None)
-os.makedirs("logs", exist_ok=True)
-logging.basicConfig(
+recreate_defaults(log_level=None)
+makedirs("logs", exist_ok=True)
+basicConfig(
     filename="logs/monthly_playlist_%s.log"
     % (datetime.now().strftime("%d_%m_%Y")),
     encoding="utf-8",
-    level=logging.INFO,
+    level=INFO,
 )
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 console = Console()
 existing_playlists_file = "existing_playlists_file.dat"
 last_run_file = "last_run.txt"
@@ -47,8 +51,8 @@ class Spotify:
         self.current_username = self.sp.current_user()["uri"][13:]
         self.track_list = []
         self.playlist_names = []
-        if os.path.exists(existing_playlists_file):
-            if os.stat(existing_playlists_file).st_size != 0:
+        if exists(existing_playlists_file):
+            if stat(existing_playlists_file).st_size != 0:
                 with open(existing_playlists_file, "r") as f:
                     self.already_created_playlists = list(f.read().splitlines())
             else:
@@ -56,8 +60,8 @@ class Spotify:
         else:
             self.already_created_playlists = []
         self.already_created_playlists_inter = []
-        if os.path.exists(last_run_file):
-            if os.stat(last_run_file).st_size != 0:
+        if exists(last_run_file):
+            if stat(last_run_file).st_size != 0:
                 with open(last_run_file, "r") as f:
                     self.last_run = f.read()
             else:
@@ -68,7 +72,7 @@ class Spotify:
         self.playlist_names_with_id = []
 
     def spotipy_init(self, *scope):
-        return spotipy.Spotify(
+        return Spotify(
             auth_manager=SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
