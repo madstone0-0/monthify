@@ -17,7 +17,8 @@ MAX_RESULTS = 10000
 structlog.stdlib.recreate_defaults(log_level=None)
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
-    filename="logs/monthly_playlist_%s.log" % (datetime.now().strftime("%d_%m_%Y_%H_%M")),
+    filename="logs/monthly_playlist_%s.log"
+    % (datetime.now().strftime("%d_%m_%Y")),
     encoding="utf-8",
     level=logging.INFO,
 )
