@@ -252,16 +252,22 @@ ___  ___            _   _     _  __
 
     def create_monthly_playlists(self):
         logger.info("Creating playlists")
-        if datetime.strptime(self.last_run, last_run_format).strftime("%B") != datetime.now().strftime("%B"):
+        if datetime.strptime(self.last_run, last_run_format).strftime(
+            "%B"
+        ) != datetime.now().strftime("%B"):
             for month, year in self.playlist_names:
                 if str(month + " '" + year[2:]) in self.already_created_playlists:
-                    console.print("%s playlist already exists" % (month + " '" + year[2:]))
+                    console.print(
+                        "%s playlist already exists" % (month + " '" + year[2:])
+                    )
                 else:
                     name = month + " '" + year[2:]
                     self.create_playlist(name)
         else:
-            console.print("Playlist generation has already occurred this month, do you still want to generate "
-                          "playlists? (yes/no)")
+            console.print(
+                "Playlist generation has already occurred this month, do you still want to generate "
+                "playlists? (yes/no)"
+            )
             if not console.input("> ").lower().startswith("y"):
                 console.print("Playlist generation skipped")
             else:
