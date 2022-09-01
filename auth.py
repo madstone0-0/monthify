@@ -75,6 +75,20 @@ class Spotify:
             )
         )
 
+    def print_name(self):
+        console.print(
+            f"""                                                                                         
+___  ___            _   _     _  __       
+|  \/  |           | | | |   (_)/ _|      
+| .  . | ___  _ __ | |_| |__  _| |_ _   _ 
+| |\/| |/ _ \| '_ \| __| '_ \| |  _| | | |
+| |  | | (_) | | | | |_| | | | | | | |_| |
+\_|  |_/\___/|_| |_|\__|_| |_|_|_|  \__, |
+                                     __/ |
+                                    |___/ 
+"""
+        )
+
     def update_last_run(self):
         self.last_run = datetime.now().strftime(last_run_format)
         with open(last_run_file, "w") as f:
