@@ -315,6 +315,7 @@ class Spotify:
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             self.sp.playlist_add_items(playlist_id=playlist_id, items=to_be_added_uris)
+            console.print("\n")
         logger.info("Ended track addition")
 
     def sort_tracks_by_month(self):
