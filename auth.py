@@ -195,7 +195,7 @@ ___  ___            _   _     _  __
             )
             console.print("Added %s playlist" % name)
             logger.info("Added playlist", name=name)
-        self.already_created_playlists = already_created_playlists
+        self.already_created_playlists_inter = already_created_playlists
 
     def get_saved_track_info(self):
         tracks = self.get_user_saved_tracks()
@@ -267,12 +267,15 @@ ___  ___            _   _     _  __
             else:
                 for month, year in self.playlist_names:
                     if str(month + " '" + year[2:]) in self.already_created_playlists:
-                        console.print("%s playlist already exists" % (month + " '" + year[2:]))
+                        console.print(
+                            "%s playlist already exists" % (month + " '" + year[2:])
+                        )
                     else:
                         name = month + " '" + year[2:]
                         self.create_playlist(name)
-        if not self.already_created_playlists:
-            self.already_created_playlists = self.already_created_playlists_inter
+        if self.already_created_playlists_inter:
+            self.already_created_playlists.append(*self.already_created_playlists_inter)
+            self.already_created_playlists = list(dict.fromkeys(self.already_created_playlists))
         with open(existing_playlists_file, "w") as f:
             f.write("\n".join(self.already_created_playlists))
 
