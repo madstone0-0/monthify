@@ -252,7 +252,13 @@ ___  ___            _   _     _  __
 
     def create_monthly_playlists(self):
         logger.info("Creating playlists")
-        if datetime.strptime(self.last_run, last_run_format).strftime(
+        last_run = ""
+        if self.last_run == "":
+            last_run = datetime.now().strftime(last_run_format)
+        else:
+            last_run = self.last_run
+
+        if datetime.strptime(last_run, last_run_format).strftime(
             "%B"
         ) != datetime.now().strftime("%B"):
             for month, year in self.playlist_names:
