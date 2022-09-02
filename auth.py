@@ -1,7 +1,7 @@
 #!python3
 # encoding=utf-8
 
-from spotipy import Spotify
+import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from track import Track
 from date_parser import extract_month_and_year
@@ -72,7 +72,7 @@ class Spotify:
         self.playlist_names_with_id = []
 
     def spotipy_init(self, *scope):
-        return Spotify(
+        return spotipy.Spotify(
             auth_manager=SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
