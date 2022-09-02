@@ -292,8 +292,10 @@ ___  ___            _   _     _  __
         if self.already_created_playlists_inter:
             self.already_created_playlists.append(*self.already_created_playlists_inter)
             self.already_created_playlists = list(dict.fromkeys(self.already_created_playlists))
-        with open(existing_playlists_file, "w") as f:
-            f.write("\n".join(self.already_created_playlists))
+
+        if self.already_created_playlists:
+            with open(existing_playlists_file, "w") as f:
+                f.write("\n".join(self.already_created_playlists))
 
     def add_to_playlist(self, tracks_info: list, playlist_id):
         logger.info(
