@@ -1,5 +1,5 @@
 #!python3
-# encoding=utf-8
+# -*- coding: utf-8 -*-
 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
