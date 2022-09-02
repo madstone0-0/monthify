@@ -347,7 +347,9 @@ ___  ___            _   _     _  __
             console.print("No tracks to add\n", style="bold red")
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
-            self.sp.playlist_add_items(playlist_id=playlist_id, items=to_be_added_uris)
+            to_be_added_uris_chunks = [to_be_added_uris[x:x+100] for x in range(0, len(to_be_added_uris), 100)]
+            for chunk in to_be_added_uris_chunks:
+                self.sp.playlist_add_items(playlist_id=playlist_id, items=chunk)
             console.print("\n")
         logger.info("Ended track addition")
 
