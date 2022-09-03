@@ -290,7 +290,7 @@ ___  ___            _   _     _  __
                         name = month + " '" + year[2:]
                         self.create_playlist(name)
         if self.already_created_playlists_inter:
-            self.already_created_playlists.append(*self.already_created_playlists_inter)
+            self.already_created_playlists = [*self.already_created_playlists ,*self.already_created_playlists_inter]
             self.already_created_playlists = list(dict.fromkeys(self.already_created_playlists))
 
         if self.already_created_playlists:
