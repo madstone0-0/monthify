@@ -23,7 +23,7 @@ recreate_defaults(log_level=None)
 makedirs("logs", exist_ok=True)
 basicConfig(
     filename="logs/monthly_playlist_%s.log"
-    % (datetime.now().strftime("%d_%m_%Y")),
+             % (datetime.now().strftime("%d_%m_%Y")),
     encoding="utf-8",
     level=INFO,
 )
@@ -51,12 +51,15 @@ class Spotify:
         self.current_username = self.sp.current_user()["uri"][13:]
         self.track_list = []
         self.playlist_names = []
+        self.already_created_playlists_exists = False
         if exists(existing_playlists_file):
             if stat(existing_playlists_file).st_size != 0:
                 with open(existing_playlists_file, "r") as f:
                     self.already_created_playlists = list(f.read().splitlines())
+                    self.already_created_playlists_exists = True
             else:
                 self.already_created_playlists = []
+                self.already_created_playlists_exists = False
         else:
             self.already_created_playlists = []
         self.already_created_playlists_inter = []
@@ -70,6 +73,16 @@ class Spotify:
             self.last_run = ""
 
         self.playlist_names_with_id = []
+        self.name = f"""
+        ___  ___            _   _     _  __       
+        |  \/  |           | | | |   (_)/ _|      
+        | .  . | ___  _ __ | |_| |__  _| |_ _   _ 
+        | |\/| |/ _ \| '_ \| __| '_ \| |  _| | | |
+        | |  | | (_) | | | | |_| | | | | | | |_| |
+        \_|  |_/\___/|_| |_|\__|_| |_|_|_|  \__, |
+                                             __/ |
+                                            |___/ 
+        """
 
     def spotipy_init(self, *scope):
         return spotipy.Spotify(
@@ -81,19 +94,9 @@ class Spotify:
             )
         )
 
-    def print_name(self):
-        console.print(
-            f"""                                                                                         
-___  ___            _   _     _  __       
-|  \/  |           | | | |   (_)/ _|      
-| .  . | ___  _ __ | |_| |__  _| |_ _   _ 
-| |\/| |/ _ \| '_ \| __| '_ \| |  _| | | |
-| |  | | (_) | | | | |_| | | | | | | |_| |
-\_|  |_/\___/|_| |_|\__|_| |_|_|_|  \__, |
-                                     __/ |
-                                    |___/ 
-"""
-        )
+    def starting(self):
+        console.print(f"""[green]%s[/green]""" % self.name)
+        console.print("Username: [cyan]%s[/cyan]" % self.current_username)
 
     def update_last_run(self):
         self.last_run = datetime.now().strftime(last_run_format)
@@ -202,9 +205,9 @@ ___  ___            _   _     _  __
         self.already_created_playlists_inter = already_created_playlists
 
     def get_saved_track_info(self):
+        console.print("Retrieving user saved tracks")
         tracks = self.get_user_saved_tracks()
         logger.info("Retrieving saved track info")
-        console.print("Retrieving user saved tracks")
         # logger.info("Saved tracks", tracks=tracks)
         for _, item in enumerate(tracks):
             track = item["track"]
@@ -262,9 +265,9 @@ ___  ___            _   _     _  __
         else:
             last_run = self.last_run
 
-        if datetime.strptime(last_run, last_run_format).strftime(
-            "%B"
-        ) != datetime.now().strftime("%B"):
+        if (datetime.strptime(last_run, last_run_format).strftime(
+                "%B"
+        ) != datetime.now().strftime("%B")) | self.already_created_playlists_exists is False:
             for month, year in self.playlist_names:
                 if str(month + " '" + year[2:]) in self.already_created_playlists:
                     console.print(
@@ -290,7 +293,7 @@ ___  ___            _   _     _  __
                         name = month + " '" + year[2:]
                         self.create_playlist(name)
         if self.already_created_playlists_inter:
-            self.already_created_playlists = [*self.already_created_playlists ,*self.already_created_playlists_inter]
+            self.already_created_playlists = [*self.already_created_playlists, *self.already_created_playlists_inter]
             self.already_created_playlists = list(dict.fromkeys(self.already_created_playlists))
 
         if self.already_created_playlists:
@@ -347,7 +350,7 @@ ___  ___            _   _     _  __
             console.print("No tracks to add\n", style="bold red")
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
-            to_be_added_uris_chunks = [to_be_added_uris[x:x+100] for x in range(0, len(to_be_added_uris), 100)]
+            to_be_added_uris_chunks = [to_be_added_uris[x:x + 100] for x in range(0, len(to_be_added_uris), 100)]
             for chunk in to_be_added_uris_chunks:
                 self.sp.playlist_add_items(playlist_id=playlist_id, items=chunk)
             console.print("\n")
