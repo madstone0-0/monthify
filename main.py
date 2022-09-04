@@ -4,8 +4,8 @@ from auth import Spotify
 if __name__ == "__main__":
     controller = Spotify()
 
-    # Print name
-    controller.print_name()
+    # Starting info
+    controller.starting()
 
     # Get user saved tracks
     controller.get_saved_track_info()
