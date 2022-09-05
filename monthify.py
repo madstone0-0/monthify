@@ -23,8 +23,7 @@ MAX_RESULTS = 10000
 recreate_defaults(log_level=None)
 makedirs("logs", exist_ok=True)
 basicConfig(
-    filename="logs/monthly_playlist_%s.log"
-             % (datetime.now().strftime("%d_%m_%Y")),
+    filename="logs/monthly_playlist_%s.log" % (datetime.now().strftime("%d_%m_%Y")),
     encoding="utf-8",
     level=DEBUG,
 )
@@ -278,9 +277,10 @@ class Monthify:
         else:
             last_run = self.last_run
 
-        if (datetime.strptime(last_run, last_run_format).strftime(
-                "%B"
-        ) != datetime.now().strftime("%B")) | self.already_created_playlists_exists is False:
+        if (
+            datetime.strptime(last_run, last_run_format).strftime("%B")
+            != datetime.now().strftime("%B")
+        ) | self.already_created_playlists_exists is False:
             for month, year in self.playlist_names:
                 if str(month + " '" + year[2:]) in self.already_created_playlists:
                     console.print(
@@ -306,8 +306,13 @@ class Monthify:
                         name = month + " '" + year[2:]
                         self.create_playlist(name)
         if self.already_created_playlists_inter:
-            self.already_created_playlists = [*self.already_created_playlists, *self.already_created_playlists_inter]
-            self.already_created_playlists = list(dict.fromkeys(self.already_created_playlists))
+            self.already_created_playlists = [
+                *self.already_created_playlists,
+                *self.already_created_playlists_inter,
+            ]
+            self.already_created_playlists = list(
+                dict.fromkeys(self.already_created_playlists)
+            )
 
         if self.already_created_playlists:
             with open(existing_playlists_file, "w") as f:
@@ -366,7 +371,10 @@ class Monthify:
             console.print("No tracks to add\n", style="bold red")
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
-            to_be_added_uris_chunks = [to_be_added_uris[x:x + 100] for x in range(0, len(to_be_added_uris), 100)]
+            to_be_added_uris_chunks = [
+                to_be_added_uris[x : x + 100]
+                for x in range(0, len(to_be_added_uris), 100)
+            ]
             for chunk in to_be_added_uris_chunks:
                 self.sp.playlist_add_items(playlist_id=playlist_id, items=chunk)
             console.print("\n")
