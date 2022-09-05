@@ -76,15 +76,25 @@ class Monthify:
         """
 
     def starting(self):
+        """
+        Staring function
+        Displays project name and current username
+        """
         console.print(f"""[green]%s[/green]""" % self.name)
         console.print("Username: [cyan]%s[/cyan]" % self.current_username)
 
     def update_last_run(self):
+        """
+        Updates last run time to current time
+        """
         self.last_run = datetime.now().strftime(last_run_format)
         with open(last_run_file, "w") as f:
             f.write(self.last_run)
 
     def get_user_saved_tracks(self):
+        """
+        Retrieves the current user's saved spotify tracks
+        """
         results = []
         tries = 0
         logger.info("Starting user saved tracks fetch")
@@ -108,6 +118,9 @@ class Monthify:
         return results
 
     def get_user_saved_playlists(self):
+        """
+        Retrieves the current user's created or liked spotify playlists
+        """
         results = []
         tries = 0
         logger.info("Starting user saved playlists fetch")
@@ -129,6 +142,9 @@ class Monthify:
         return results
 
     def get_playlist_items(self, playlist_id):
+        """
+        Retrieves all the tracks in a specified spotify playlist identified by playlist id
+        """
         results = []
         tries = 0
         logger.info("Starting playlist item fetch", playlist_id=playlist_id)
@@ -154,6 +170,10 @@ class Monthify:
         return results
 
     def create_playlist(self, name):
+        """
+        Creates playlist with name var checking if the playlist already exists in the user's library,
+        if it does the user is informed
+        """
         sp = self.sp
         playlists = self.get_user_saved_playlists()
         already_created_playlists = []
@@ -186,6 +206,9 @@ class Monthify:
         self.already_created_playlists_inter = already_created_playlists
 
     def get_saved_track_info(self):
+        """
+        Collates the user's saved tracks and adds them to a list as a Track type
+        """
         console.print("Retrieving user saved tracks")
         tracks = self.get_user_saved_tracks()
         logger.info("Retrieving saved track info")
@@ -211,10 +234,13 @@ class Monthify:
         console.print("Finished retrieving user saved tracks")
 
     def get_playlist_names_names(self):
+        """
+        Generates month playlist names using the added_at attribute of the Track type
+        """
         logger.info("Generating playlist names")
         console.print("Retrieving relevant playlist information")
         for track in self.track_list:
-            month, year = extract_month_and_year(track.added_at)
+            month, year = track.parse_track_month()
             logger.info("Playlist name", month=month, year=year)
             self.playlist_names.append((month, year))
         unsorted_playlist_names = [*set(self.playlist_names)]
@@ -223,6 +249,9 @@ class Monthify:
         logger.info("Final list", playlist_names=self.playlist_names)
 
     def get_monthly_playlist_ids(self):
+        """
+        Retrieves playlist ids of already created month playlists
+        """
         logger.info("Retrieving playlist ids")
         playlists = self.get_user_saved_playlists()
         for month, year in self.playlist_names:
@@ -239,6 +268,9 @@ class Monthify:
         console.print("Finished retrieving relevant playlist information")
 
     def create_monthly_playlists(self):
+        """
+        Creates playlists in user's library based on generated playlist names
+        """
         logger.info("Creating playlists")
         last_run = ""
         if self.last_run == "":
@@ -282,6 +314,9 @@ class Monthify:
                 f.write("\n".join(self.already_created_playlists))
 
     def add_to_playlist(self, tracks_info: list, playlist_id):
+        """
+        Add a list of tracks to a specified playlist using playlist id
+        """
         logger.info(
             "Attempting to add tracks to playlist",
             tracks=str(tracks_info),
@@ -338,6 +373,9 @@ class Monthify:
         logger.info("Ended track addition")
 
     def sort_tracks_by_month(self):
+        """
+        Sorts saved tracks into appropriate monthly playlist
+        """
         log = logger.bind(
             playlist_names=self.playlist_names_with_id, tracks=self.track_list
         )
