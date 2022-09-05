@@ -1,8 +1,8 @@
 #!python3
-from auth import Spotify
+from monthify import Monthify
 
 if __name__ == "__main__":
-    controller = Spotify()
+    controller = Monthify()
 
     # Starting info
     controller.starting()
