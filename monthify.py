@@ -15,7 +15,9 @@ from datetime import datetime
 from os import makedirs
 from os.path import exists
 from os import stat
+from os import remove
 from auth import Auth
+from cachetools import  cached, TTLCache
 
 MAX_TRIES = 3
 MAX_RESULTS = 10000
@@ -32,6 +34,8 @@ console = Console()
 existing_playlists_file = "existing_playlists_file.dat"
 last_run_file = "last_run.txt"
 last_run_format = "%Y-%m-%d %H:%M:%S"
+saved_tracks_cache = TTLCache(maxsize=1000, ttl=86400)
+saved_playlists_cache = TTLCache(maxsize=1000, ttl=86400)
 
 
 class Monthify:
@@ -88,6 +92,7 @@ class Monthify:
         with open(last_run_file, "w") as f:
             f.write(self.last_run)
 
+    @cached(saved_tracks_cache)
     def get_user_saved_tracks(self):
         """
         Retrieves the current user's saved spotify tracks
@@ -114,6 +119,7 @@ class Monthify:
         logger.info("Ending user saved tracks fetch")
         return results
 
+    @cached(saved_playlists_cache)
     def get_user_saved_playlists(self):
         """
         Retrieves the current user's created or liked spotify playlists
