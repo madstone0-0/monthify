@@ -15,6 +15,8 @@ from datetime import datetime
 from os import makedirs
 from os.path import exists
 from os import stat
+from os import remove
+from pathlib import Path
 from auth import Auth
 
 MAX_TRIES = 3
@@ -42,8 +44,11 @@ class Monthify:
         self.track_list = []
         self.playlist_names = []
         self.already_created_playlists_exists = False
-        if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
-            if stat(existing_playlists_file).st_ctime >= 31536000:
+        if (
+            exists(existing_playlists_file)
+            and stat(existing_playlists_file).st_size != 0
+        ):
+            if (datetime.now() - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)).seconds >= 31536000:
                 remove(existing_playlists_file)
                 self.already_created_playlists = []
                 self.already_created_playlists_exists = False
@@ -98,24 +103,17 @@ class Monthify:
         Retrieves the current user's saved spotify tracks
         """
         results = []
-        tries = 0
         logger.info("Starting user saved tracks fetch")
         for i in range(0, MAX_RESULTS, 50):
             try:
-                result = self.sp.current_user_saved_tracks(limit=50, offset=i)["items"]
-            except ConnectionError:
+                result = self.sp.current_user_saved_tracks(limit=50, offset=i)
+            except ConnectionError as e:
                 logger.error(
-                    "Failed to reach spotify server trying", max_retries=MAX_TRIES
+                    "Failed to reach spotify server trying", exception=e
                 )
-                while tries <= MAX_TRIES:
-                    logger.info("Retrying...", attempt=tries)
-                    result = self.sp.current_user_saved_tracks(limit=50, offset=i)[
-                        "items"
-                    ]
-                    tries += 0
-            if not result:
+            if result["total"] == len(results):
                 break
-            results += [*result]
+            results += [*result["items"]]
         logger.info("Ending user saved tracks fetch")
         return results
 
@@ -124,22 +122,17 @@ class Monthify:
         Retrieves the current user's created or liked spotify playlists
         """
         results = []
-        tries = 0
         logger.info("Starting user saved playlists fetch")
         for i in range(0, MAX_RESULTS, 50):
             try:
-                result = self.sp.current_user_playlists(limit=50, offset=i)["items"]
-            except ConnectionError:
+                result = self.sp.current_user_playlists(limit=50, offset=i)
+            except ConnectionError as e:
                 logger.error(
-                    "Failed to reach spotify server trying", max_retries=MAX_TRIES
+                    "Failed to reach spotify server trying", exception=e
                 )
-                while tries <= MAX_TRIES:
-                    logger.info("Retrying...", attempt=tries)
-                    result = self.sp.current_user_playlists(limit=50, offset=i)["items"]
-                    tries += 1
-            if not result:
+            if result["total"] == len(results):
                 break
-            results += [*result]
+            results += [*result["items"]]
         logger.info("Ending user saved playlists fetch")
         return results
 
@@ -148,26 +141,19 @@ class Monthify:
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
         results = []
-        tries = 0
         logger.info("Starting playlist item fetch", playlist_id=playlist_id)
         for i in range(0, MAX_RESULTS, 20):
             try:
                 result = self.sp.playlist_items(
                     playlist_id=playlist_id, fields=None, limit=20, offset=i
-                )["items"]
-            except ConnectionError:
-                logger.error(
-                    "Failed to reach spotify server trying", max_retries=MAX_TRIES
                 )
-                while tries <= MAX_TRIES:
-                    logger.info("Retrying...", attempt=tries)
-                    result = self.sp.playlist_items(
-                        playlist_id=playlist_id, fields=None, limit=20, offset=i
-                    )["items"]
-                    tries += 1
-            if not result:
+            except ConnectionError as e:
+                logger.error(
+                    "Failed to reach spotify server trying", exception=e
+                )
+            if result["total"] == len(results):
                 break
-            results += [*result]
+            results += [*result["items"]]
         logger.info("Ending playlist item fetch", playlist_id=playlist_id)
         return results
 
@@ -214,25 +200,15 @@ class Monthify:
         console.print("Retrieving user saved tracks")
         tracks = self.get_user_saved_tracks()
         logger.info("Retrieving saved track info")
-        # logger.info("Saved tracks", tracks=tracks)
-        for _, item in enumerate(tracks):
-            track = item["track"]
-            # logger.info("Assigning values to new Track type instance")
-            logger.info(
-                "Track type",
-                title=track["name"],
-                artist=track["artists"][0]["name"],
+        self.track_list = [
+            Track(
+                title=item["track"]["name"],
+                artist=item["track"]["artists"][0]["name"],
                 added_at=item["added_at"],
-                uri=track["uri"],
+                uri=item["track"]["uri"],
             )
-            self.track_list.append(
-                Track(
-                    track["name"],
-                    track["artists"][0]["name"],
-                    item["added_at"],
-                    track["uri"],
-                )
-            )
+            for _, item in enumerate(tracks)
+        ]
         console.print("Finished retrieving user saved tracks")
 
     def get_playlist_names_names(self):
@@ -241,10 +217,7 @@ class Monthify:
         """
         logger.info("Generating playlist names")
         console.print("Retrieving relevant playlist information")
-        for track in self.track_list:
-            month, year = track.parse_track_month()
-            logger.info("Playlist name", month=month, year=year)
-            self.playlist_names.append((month, year))
+        self.playlist_names = [(track.parse_track_month()) for track in self.track_list]
         unsorted_playlist_names = [*set(self.playlist_names)]
         self.playlist_names = sort_chronologically(unsorted_playlist_names)
         logger.info("Removing duplicate playlist names")
@@ -281,8 +254,8 @@ class Monthify:
             last_run = self.last_run
 
         if (
-                datetime.strptime(last_run, last_run_format).strftime("%B")
-                != datetime.now().strftime("%B")
+            datetime.strptime(last_run, last_run_format).strftime("%B")
+            != datetime.now().strftime("%B")
         ) and self.already_created_playlists_exists is False:
             for month, year in self.playlist_names:
                 if str(month + " '" + year[2:]) in self.already_created_playlists:
@@ -331,12 +304,9 @@ class Monthify:
             playlist=playlist_id,
         )
         playlist_items = self.get_playlist_items(playlist_id)
-        to_be_added_uris = []
-        playlist_uris = []
+        to_be_added_uris, playlist_uris = [], []
 
-        for _, item in enumerate(playlist_items):
-            track = item["track"]
-            playlist_uris.append(track["uri"])
+        playlist_uris = [item["track"]["uri"] for _, item in enumerate(playlist_items)]
 
         for track_title, track_artist, track_uri in tracks_info:
             log = logger.bind(
@@ -375,7 +345,7 @@ class Monthify:
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             to_be_added_uris_chunks = [
-                to_be_added_uris[x: x + 100]
+                to_be_added_uris[x : x + 100]
                 for x in range(0, len(to_be_added_uris), 100)
             ]
             for chunk in to_be_added_uris_chunks:
@@ -412,16 +382,7 @@ class Monthify:
                 % (month, year[2:], p_id)
             )
             console.rule()
-            tracks_info = []
-            for track in self.track_list:
-                if track.parse_track_month() == (month, year):
-                    logger.info(
-                        "Considered adding track to playlist",
-                        title=track.title,
-                        artist=track.artist,
-                        uri=track.uri,
-                    )
-                    tracks_info.append((track.title, track.artist, track.uri))
+            tracks_info = [(track.title, track.artist, track.uri) for track in self.track_list if track.parse_track_month() == (month, year)]
             if not tracks_info:
                 break
             else:
