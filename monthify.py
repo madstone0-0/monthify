@@ -278,8 +278,8 @@ class Monthify:
             last_run = self.last_run
 
         if (
-            datetime.strptime(last_run, last_run_format).strftime("%B")
-            != datetime.now().strftime("%B")
+                datetime.strptime(last_run, last_run_format).strftime("%B")
+                != datetime.now().strftime("%B")
         ) | self.already_created_playlists_exists is False:
             for month, year in self.playlist_names:
                 if str(month + " '" + year[2:]) in self.already_created_playlists:
@@ -372,7 +372,7 @@ class Monthify:
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             to_be_added_uris_chunks = [
-                to_be_added_uris[x : x + 100]
+                to_be_added_uris[x: x + 100]
                 for x in range(0, len(to_be_added_uris), 100)
             ]
             for chunk in to_be_added_uris_chunks:
