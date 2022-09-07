@@ -43,9 +43,14 @@ class Monthify:
         self.playlist_names = []
         self.already_created_playlists_exists = False
         if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
-            with open(existing_playlists_file, "r") as f:
-                self.already_created_playlists = list(f.read().splitlines())
-                self.already_created_playlists_exists = True
+            if stat(existing_playlists_file).st_ctime >= 31536000:
+                remove(existing_playlists_file)
+                self.already_created_playlists = []
+                self.already_created_playlists_exists = False
+            else:
+                with open(existing_playlists_file, "r") as f:
+                    self.already_created_playlists = list(f.read().splitlines())
+                    self.already_created_playlists_exists = True
         else:
             self.already_created_playlists = []
             self.already_created_playlists_exists = False
