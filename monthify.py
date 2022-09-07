@@ -42,16 +42,14 @@ class Monthify:
         self.track_list = []
         self.playlist_names = []
         self.already_created_playlists_exists = False
-        if exists(existing_playlists_file):
-            if stat(existing_playlists_file).st_size != 0:
-                with open(existing_playlists_file, "r") as f:
-                    self.already_created_playlists = list(f.read().splitlines())
-                    self.already_created_playlists_exists = True
-            else:
-                self.already_created_playlists = []
-                self.already_created_playlists_exists = False
+        if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
+            with open(existing_playlists_file, "r") as f:
+                self.already_created_playlists = list(f.read().splitlines())
+                self.already_created_playlists_exists = True
         else:
             self.already_created_playlists = []
+            self.already_created_playlists_exists = False
+
         self.already_created_playlists_inter = []
         if exists(last_run_file):
             if stat(last_run_file).st_size != 0:
@@ -280,7 +278,7 @@ class Monthify:
         if (
                 datetime.strptime(last_run, last_run_format).strftime("%B")
                 != datetime.now().strftime("%B")
-        ) | self.already_created_playlists_exists is False:
+        ) and self.already_created_playlists_exists is False:
             for month, year in self.playlist_names:
                 if str(month + " '" + year[2:]) in self.already_created_playlists:
                     console.print(
