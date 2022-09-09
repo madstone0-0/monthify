@@ -6,8 +6,6 @@ from spotipy.oauth2 import SpotifyOAuth
 
 class Auth:
     def __init__(self, CLIENT_ID, CLIENT_SECRET):
-        # self.client_secret = "e775fe5341af41599eb2c4c639ec0702"
-        # self.client_id = "fa28a21045ed408bb2858a9439cd1813"
         self.client_secret = CLIENT_SECRET
         self.client_id = CLIENT_ID
         self.redirect_uri = "https://open.spotify.com/"
