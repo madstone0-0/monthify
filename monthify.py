@@ -1,22 +1,23 @@
 #!python3
 # -*- coding: utf-8 -*-
 
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-from track import Track
-from date_parser import extract_month_and_year
-from date_parser import sort_chronologically
+from datetime import datetime
+from logging import DEBUG
+from logging import basicConfig
+from os import makedirs
+from os import remove
+from os import stat
+from os.path import exists
+from pathlib import Path
+
+from cachetools import cached, TTLCache
+from rich.console import Console
 from structlog import get_logger
 from structlog.stdlib import recreate_defaults
-from logging import basicConfig
-from logging import DEBUG
-from rich.console import Console
-from datetime import datetime
-from os import makedirs
-from os.path import exists
-from os import stat
-from os import remove
-from pathlib import Path
+
+from auth import Auth
+from date_parser import sort_chronologically
+from track import Track
 from auth import Auth
 from cachetools import  cached, TTLCache
 
@@ -40,8 +41,8 @@ saved_playlists_cache = TTLCache(maxsize=1000, ttl=86400)
 
 
 class Monthify:
-    def __init__(self):
-        authentication = Auth()
+    def __init__(self, auth):
+        authentication = auth
         self.sp = authentication.get_spotipy()
         self.current_username = self.sp.current_user()["uri"][13:]
         self.track_list = []
