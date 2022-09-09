@@ -18,7 +18,7 @@ from os import stat
 from os import remove
 from pathlib import Path
 from auth import Auth
-from cachetools import  cached, TTLCache
+from cachetools import cached, TTLCache
 
 MAX_TRIES = 3
 MAX_RESULTS = 10000
@@ -51,7 +51,10 @@ class Monthify:
             exists(existing_playlists_file)
             and stat(existing_playlists_file).st_size != 0
         ):
-            if (datetime.now() - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)).seconds >= 31536000:
+            if (
+                datetime.now()
+                - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
+            ).seconds >= 31536000:
                 remove(existing_playlists_file)
                 self.already_created_playlists = []
                 self.already_created_playlists_exists = False
@@ -112,9 +115,7 @@ class Monthify:
             try:
                 result = self.sp.current_user_saved_tracks(limit=50, offset=i)
             except ConnectionError as e:
-                logger.error(
-                    "Failed to reach spotify server trying", exception=e
-                )
+                logger.error("Failed to reach spotify server trying", exception=e)
             if result["total"] == len(results):
                 break
             results += [*result["items"]]
@@ -132,9 +133,7 @@ class Monthify:
             try:
                 result = self.sp.current_user_playlists(limit=50, offset=i)
             except ConnectionError as e:
-                logger.error(
-                    "Failed to reach spotify server trying", exception=e
-                )
+                logger.error("Failed to reach spotify server trying", exception=e)
             if result["total"] == len(results):
                 break
             results += [*result["items"]]
@@ -153,9 +152,7 @@ class Monthify:
                     playlist_id=playlist_id, fields=None, limit=20, offset=i
                 )
             except ConnectionError as e:
-                logger.error(
-                    "Failed to reach spotify server trying", exception=e
-                )
+                logger.error("Failed to reach spotify server trying", exception=e)
             if result["total"] == len(results):
                 break
             results += [*result["items"]]
@@ -387,7 +384,11 @@ class Monthify:
                 % (month, year[2:], p_id)
             )
             console.rule()
-            tracks_info = [(track.title, track.artist, track.uri) for track in self.track_list if track.parse_track_month() == (month, year)]
+            tracks_info = [
+                (track.title, track.artist, track.uri)
+                for track in self.track_list
+                if track.parse_track_month() == (month, year)
+            ]
             if not tracks_info:
                 break
             else:
