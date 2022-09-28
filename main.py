@@ -6,23 +6,52 @@ import sys
 from auth import Auth
 
 console = Console()
-parser = argparse.ArgumentParser(prog="monthify", description="Sorts saved spotify tracks by month saved")
-parser.add_argument("--CLIENT_ID",
-                    metavar="client_id",
-                    type=str,
-                    required=True,
-                    help="Spotify App client id"
-                    )
+parser = argparse.ArgumentParser(
+    prog="monthify", description="Sorts saved spotify tracks by month saved"
+)
+parser.add_argument(
+    "--CLIENT_ID",
+    metavar="client_id",
+    type=str,
+    required=True,
+    help="Spotify App client id",
+)
 
-parser.add_argument("--CLIENT_SECRET",
-                    metavar="client_secret",
-                    type=str,
-                    required=True,
-                    help="Spotify App client secret")
+parser.add_argument(
+    "--CLIENT_SECRET",
+    metavar="client_secret",
+    type=str,
+    required=True,
+    help="Spotify App client secret",
+)
+
+parser.add_argument(
+    "--skip-playlist-creation",
+    default=False,
+    required=False,
+    action="store_true",
+    help="Skips playlist generation automatically if already done this month",
+)
+
+parser.add_argument(
+    "--logout",
+    default=False,
+    required=False,
+    action="store_true",
+    help="Logout of currently logged in account",
+)
 
 args = parser.parse_args()
 CLIENT_ID = args.CLIENT_ID
 CLIENT_SECRET = args.CLIENT_SECRET
+SKIP_PLAYLIST_CREATION = False
+LOGOUT = False
+
+if args.skip_playlist_creation:
+    SKIP_PLAYLIST_CREATION = True
+
+if args.logout:
+    LOGOUT = True
 
 if not CLIENT_ID or not CLIENT_SECRET:
     console.print("Client id and secret needed to connect to spotify's servers")
@@ -30,7 +59,14 @@ if not CLIENT_ID or not CLIENT_SECRET:
 
 
 if __name__ == "__main__":
-    controller = Monthify(Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET))
+    controller = Monthify(
+        Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET),
+        SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
+        LOGOUT=LOGOUT,
+    )
+
+    # Logout of current account if user wishes
+    controller.logout()
 
     # Starting info
     controller.starting()

@@ -15,4 +15,9 @@ pip install -r requirements.txt
 ```
 cd monthify
 py main.py --client-id=CLIENT_ID --client-secret=CLIENT_SECRET
+
+```
+For more options
+```
+py main.py --help 
 ```

@@ -35,9 +35,11 @@ saved_playlists_cache = TTLCache(maxsize=1000, ttl=86400)
 
 
 class Monthify:
-    def __init__(self, auth):
+    def __init__(self, auth, SKIP_PLAYLIST_CREATION, LOGOUT):
         authentication = auth
         self.sp = authentication.get_spotipy()
+        self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
+        self.LOGOUT = LOGOUT
         self.current_username = self.sp.current_user()["uri"][13:]
         self.track_list = []
         self.playlist_names = []
@@ -82,6 +84,15 @@ class Monthify:
                                              __/ |
                                             |___/ 
         """
+
+    def logout(self):
+        if self.LOGOUT is True:
+            try:
+                remove("./.cache")
+                logger.info("Successfully deleted .cache file, user logged out")
+            except FileNotFoundError:
+                console.print("Not logged into any account", style="bold red")
+                logger.error("Cache file doesn't exist")
 
     def starting(self):
         """
@@ -268,6 +279,7 @@ class Monthify:
                 "playlists? (yes/no)"
             )
             logger.info("Requesting playlist creation")
+        if self.SKIP_PLAYLIST_CREATION is False:
             if not console.input("> ").lower().startswith("y"):
                 console.print("Playlist generation skipped")
                 logger.info("Playlist generation skipped")
@@ -281,6 +293,10 @@ class Monthify:
                     else:
                         name = month + " '" + year[2:]
                         self.create_playlist(name)
+        else:
+            console.print("Playlist generation skipped")
+            logger.info("Playlist generation skipped")
+
         if self.already_created_playlists_inter:
             self.already_created_playlists = [
                 *self.already_created_playlists,
