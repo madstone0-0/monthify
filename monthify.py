@@ -334,7 +334,7 @@ class Monthify:
             if track_uri in playlist_uris:
                 log.info("Track already in playlist")
                 console.print(
-                    "[bold red][-][/bold red]    [link=https://open.%s][cyan]%s by %s[/cyan][/link] already exists "
+                    "[bold red][-][/bold red]\t[link=https://open.%s][cyan]%s by %s[/cyan][/link] already exists "
                     "in the playlist "
                     % (
                         (track_uri.replace(":", "/").replace("spotify", "spotify.com")),
@@ -345,7 +345,7 @@ class Monthify:
             else:
                 log.info("Track will be added to playlist")
                 console.print(
-                    "[bold green][+][/bold green]    [link=https://open.%s][bold green]%s by %s[/bold green][/link] "
+                    "[bold green][+][/bold green]\t[link=https://open.%s][bold green]%s by %s[/bold green][/link] "
                     "will be "
                     "added to the playlist "
                     % (
@@ -357,7 +357,7 @@ class Monthify:
                 to_be_added_uris.append(track_uri)
         if not to_be_added_uris:
             # logger.info("No track to add to playlist", tracks=to_be_added_uris, playlist=playlist_id)
-            console.print("       No tracks to add\n", style="bold red")
+            console.print("\tNo tracks to add\n", style="bold red")
         else:
             # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             to_be_added_uris_chunks = [
