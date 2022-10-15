@@ -51,7 +51,7 @@ class Monthify:
             if (
                 datetime.now()
                 - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
-            ).seconds >= 31536000:
+            ).days >= 30:
                 remove(existing_playlists_file)
                 self.already_created_playlists = []
                 self.already_created_playlists_exists = False
@@ -279,7 +279,7 @@ class Monthify:
                 "playlists? (yes/no)"
             )
             logger.info("Requesting playlist creation")
-        if self.SKIP_PLAYLIST_CREATION is False:
+        if self.SKIP_PLAYLIST_CREATION is False or self.already_created_playlists_exists is False:
             if not console.input("> ").lower().startswith("y"):
                 console.print("Playlist generation skipped")
                 logger.info("Playlist generation skipped")
@@ -382,15 +382,15 @@ class Monthify:
         try:
             if len(self.playlist_names) != len(self.playlist_names_with_id):
                 raise Exception
-        except Exception:
+        except RuntimeError as error:
             log.error(
                 "playlist_names and playlist_names_with_id are not the same length",
                 playlist_names_length=self.playlist_names.__len__(),
-                playlist_names_with_id_length=self.playlist_names_with_id.__len__(),
+                playlist_names_with_id_length=self.playlist_names_with_id.__len__(), error=error
             )
             raise print(
                 "The playlist_names list and the playlist_names_with_id list are not the same length "
-                "something has gone wrong"
+                "something has gone wrong error=%s" % error
             )
         for month, year, p_id in self.playlist_names_with_id:
             logger.info("Sorting into playlist", playlist=(month, year[2:]))
