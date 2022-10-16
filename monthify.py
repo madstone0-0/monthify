@@ -34,12 +34,29 @@ saved_tracks_cache = TTLCache(maxsize=1000, ttl=86400)
 saved_playlists_cache = TTLCache(maxsize=1000, ttl=86400)
 
 
+def conditional_decorator(dec, attribute):
+    """
+    Cache decorator wrapper to ensure fresh results if playlists have been created
+    """
+
+    def decorator(func):
+        def wrapper(self):
+            if getattr(self, attribute) is True:
+                return func(self)
+            return dec(func)(self)
+
+        return wrapper
+
+    return decorator
+
+
 class Monthify:
     def __init__(self, auth, SKIP_PLAYLIST_CREATION, LOGOUT):
         authentication = auth
         self.sp = authentication.get_spotipy()
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.LOGOUT = LOGOUT
+        self.has_created_playlists = False
         self.current_username = self.sp.current_user()["uri"][13:]
         self.track_list = []
         self.playlist_names = []
@@ -128,7 +145,8 @@ class Monthify:
         logger.info("Ending user saved tracks fetch")
         return results
 
-    @cached(saved_playlists_cache)
+    # @cached(saved_playlists_cache)
+    @conditional_decorator(cached(saved_playlists_cache), "has_created_playlists")
     def get_user_saved_playlists(self):
         """
         Retrieves the current user's created or liked spotify playlists
@@ -173,6 +191,7 @@ class Monthify:
         sp = self.sp
         playlists = self.get_user_saved_playlists()
         already_created_playlists = []
+        created_playlists = []
         count = 0
         logger.info("Playlist creation called", name=str(name))
         for _, item in enumerate(playlists):
@@ -190,15 +209,17 @@ class Monthify:
         else:
             console.print("Creating playlist %s" % name)
             logger.info("Creating playlist", name=str(name))
-            sp.user_playlist_create(
+            playlist = sp.user_playlist_create(
                 user=self.current_username,
                 name=name,
                 public=False,
                 collaborative=False,
                 description="%s" % name,
             )
+            created_playlists.append(playlist)
             console.print("Added %s playlist" % name)
             logger.info("Added playlist", name=str(name))
+        self.has_created_playlists = True if created_playlists.__len__() > 0 else False
         self.already_created_playlists_inter = already_created_playlists
 
     def get_saved_track_info(self):
@@ -255,6 +276,9 @@ class Monthify:
         Creates playlists in user's library based on generated playlist names
         """
         logger.info("Creating playlists")
+        spotify_playlists = [
+            item[1]["name"] for item in enumerate(self.get_user_saved_playlists())
+        ]
         last_run = ""
         if self.last_run == "":
             last_run = datetime.now().strftime(last_run_format)
@@ -266,27 +290,39 @@ class Monthify:
             != datetime.now().strftime("%B")
         ) and self.already_created_playlists_exists is False:
             for month, year in self.playlist_names:
-                if str(month + " '" + year[2:]) in self.already_created_playlists:
+                playlist_name = str(month + " '" + year[2:])
+                if (
+                    playlist_name in self.already_created_playlists
+                    and playlist_name in spotify_playlists
+                ):
                     console.print(
                         "%s playlist already exists" % (month + " '" + year[2:])
                     )
                 else:
                     name = month + " '" + year[2:]
                     self.create_playlist(name)
-        else:
+
+        if (
+            self.SKIP_PLAYLIST_CREATION is False
+            or self.already_created_playlists_exists is False
+        ):
             console.print(
                 "Playlist generation has already occurred this month, do you still want to generate "
                 "playlists? (yes/no)"
             )
             logger.info("Requesting playlist creation")
-        if self.SKIP_PLAYLIST_CREATION is False or self.already_created_playlists_exists is False:
+
             if not console.input("> ").lower().startswith("y"):
                 console.print("Playlist generation skipped")
                 logger.info("Playlist generation skipped")
             else:
                 logger.info("Playlist generation starting")
                 for month, year in self.playlist_names:
-                    if str(month + " '" + year[2:]) in self.already_created_playlists:
+                    playlist_name = str(month + " '" + year[2:])
+                    if (
+                        playlist_name in self.already_created_playlists
+                        and playlist_name in spotify_playlists
+                    ):
                         console.print(
                             "%s playlist already exists" % (month + " '" + year[2:])
                         )
@@ -386,7 +422,8 @@ class Monthify:
             log.error(
                 "playlist_names and playlist_names_with_id are not the same length",
                 playlist_names_length=self.playlist_names.__len__(),
-                playlist_names_with_id_length=self.playlist_names_with_id.__len__(), error=error
+                playlist_names_with_id_length=self.playlist_names_with_id.__len__(),
+                error=error,
             )
             raise print(
                 "The playlist_names list and the playlist_names_with_id list are not the same length "
