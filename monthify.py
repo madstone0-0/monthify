@@ -57,7 +57,8 @@ class Monthify:
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.LOGOUT = LOGOUT
         self.has_created_playlists = False
-        self.current_username = self.sp.current_user()["display_name"]
+        self.current_username = self.sp.current_user()["uri"][13:]
+        self.current_display_name = self.sp.current_user()["display_name"]
         self.track_list = []
         self.playlist_names = []
         self.already_created_playlists_exists = False
@@ -117,7 +118,7 @@ class Monthify:
         Displays project name and current username
         """
         console.print(f"""[green]%s[/green]""" % self.name)
-        console.print("Username: [cyan]%s[/cyan]" % self.current_username)
+        console.print("Username: [cyan]%s[/cyan]" % self.current_display_name)
 
     def update_last_run(self):
         """
