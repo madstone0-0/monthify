@@ -44,14 +44,8 @@ parser.add_argument(
 args = parser.parse_args()
 CLIENT_ID = args.CLIENT_ID
 CLIENT_SECRET = args.CLIENT_SECRET
-SKIP_PLAYLIST_CREATION = False
-LOGOUT = False
-
-if args.skip_playlist_creation:
-    SKIP_PLAYLIST_CREATION = True
-
-if args.logout:
-    LOGOUT = True
+SKIP_PLAYLIST_CREATION = args.skip_playlist_creation
+LOGOUT = args.logout
 
 if not CLIENT_ID or not CLIENT_SECRET:
     console.print("Client id and secret needed to connect to spotify's servers")
