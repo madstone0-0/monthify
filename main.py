@@ -59,32 +59,35 @@ if not CLIENT_ID or not CLIENT_SECRET:
 
 
 if __name__ == "__main__":
-    controller = Monthify(
-        Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET),
-        SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
-        LOGOUT=LOGOUT,
-    )
+    try:
+        controller = Monthify(
+            Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET),
+            SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
+            LOGOUT=LOGOUT,
+        )
 
-    # Logout of current account if user wishes
-    controller.logout()
+        # Logout of current account if user wishes
+        controller.logout()
 
-    # Starting info
-    controller.starting()
+        # Starting info
+        controller.starting()
 
-    # Get user saved tracks
-    controller.get_saved_track_info()
+        # Get user saved tracks
+        controller.get_saved_track_info()
 
-    # Generate names of playlists based on month and year saved tracks were added
-    controller.get_playlist_names_names()
+        # Generate names of playlists based on month and year saved tracks were added
+        controller.get_playlist_names_names()
 
-    # Create playlists based on month and year
-    controller.create_monthly_playlists()
+        # Create playlists based on month and year
+        controller.create_monthly_playlists()
 
-    # Retrieve playlist ids of created playlists
-    controller.get_monthly_playlist_ids()
+        # Retrieve playlist ids of created playlists
+        controller.get_monthly_playlist_ids()
 
-    # Add saved tracks to created playlists by month and year
-    controller.sort_tracks_by_month()
+        # Add saved tracks to created playlists by month and year
+        controller.sort_tracks_by_month()
 
-    # Update last run time
-    controller.update_last_run()
+        # Update last run time
+        controller.update_last_run()
+    except KeyboardInterrupt:
+        console.print("Exiting...")
