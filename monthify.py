@@ -74,7 +74,7 @@ class Monthify:
                 self.already_created_playlists = []
                 self.already_created_playlists_exists = False
             else:
-                with open(existing_playlists_file, "r") as f:
+                with open(existing_playlists_file, "r", encoding="utf_8") as f:
                     self.already_created_playlists = list(f.read().splitlines())
                     self.already_created_playlists_exists = True
         else:
@@ -84,7 +84,7 @@ class Monthify:
         self.already_created_playlists_inter = []
         if exists(last_run_file):
             if stat(last_run_file).st_size != 0:
-                with open(last_run_file, "r") as f:
+                with open(last_run_file, "r", encoding="utf_8") as f:
                     self.last_run = f.read()
             else:
                 self.last_run = ""
@@ -117,15 +117,15 @@ class Monthify:
         Staring function
         Displays project name and current username
         """
-        console.print(f"""[green]%s[/green]""" % self.name)
-        console.print("Username: [cyan]%s[/cyan]" % self.current_display_name)
+        console.print(f"[green]{self.name}[/green]")
+        console.print(f"Username: [cyan]{self.current_display_name}[/cyan]")
 
     def update_last_run(self):
         """
         Updates last run time to current time
         """
         self.last_run = datetime.now().strftime(last_run_format)
-        with open(last_run_file, "w") as f:
+        with open(last_run_file, "w", encoding="utf_8") as f:
             f.write(self.last_run)
 
     @cached(saved_tracks_cache)
@@ -196,19 +196,19 @@ class Monthify:
         count = 0
         logger.info("Playlist creation called", name=str(name))
         for _, item in enumerate(playlists):
-            playlist_name = str(item["name"]).encode("utf-8").lower()
-            to_be_added_name = name.encode("utf-8").lower()
+            playlist_name = str(item["name"]).encode("utf-8", errors="xmlcharrefreplace").lower()
+            to_be_added_name = name.encode("utf-8", errors="xmlcharrefreplace").lower()
             # logger.info("Playlist checking", playlist_name=playlist_name, to_be_added_name=to_be_added_name)
             if playlist_name == to_be_added_name:
                 count += 1
-                console.print("Playlist %s already exists" % name)
+                console.print(f"Playlist {name} already exists")
                 self.already_created_playlists_inter.append(name)
                 logger.info("Playlist already exists", name=str(name))
                 return
         if count != 0:
-            console.print("Playlist %s already exists" % name)
+            console.print(f"Playlist {name} already exists")
         else:
-            console.print("Creating playlist %s" % name)
+            console.print(f"Creating playlist {name}")
             logger.info("Creating playlist", name=str(name))
             playlist = sp.user_playlist_create(
                 user=self.current_username,
@@ -218,7 +218,7 @@ class Monthify:
                 description="%s" % name,
             )
             created_playlists.append(playlist)
-            console.print("Added %s playlist" % name)
+            console.print(f"Added {name} playlist")
             logger.info("Added playlist", name=str(name))
         self.has_created_playlists = True if created_playlists.__len__() > 0 else False
         self.already_created_playlists_inter = already_created_playlists
@@ -262,9 +262,9 @@ class Monthify:
             playlists = self.get_user_saved_playlists()
             for month, year in self.playlist_names:
                 for idx, item in enumerate(playlists):
-                    if (month + " '" + year[2:]).encode("utf-8").lower() == item[
+                    if (month + " '" + year[2:]).encode("utf-8", errors="xmlcharrefreplace").lower() == item[
                         "name"
-                    ].encode("utf-8").lower():
+                    ].encode("utf-8", errors="xmlcharrefreplace").lower():
                         self.playlist_names_with_id.append((month, year, item["id"]))
                         logger.info(
                             "Playlist name with ids",
@@ -345,7 +345,7 @@ class Monthify:
             )
 
         if self.already_created_playlists:
-            with open(existing_playlists_file, "w") as f:
+            with open(existing_playlists_file, "w", encoding="utf_8") as f:
                 f.write("\n".join(self.already_created_playlists))
 
     def add_to_playlist(self, tracks_info: list, playlist_id):
