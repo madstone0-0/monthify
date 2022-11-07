@@ -1,21 +1,34 @@
 #!python3
 # Track class to manage track data
 
-from date_parser import extract_month_and_year
+from dataclasses import dataclass, field, fields
+
+from utils import extract_month_and_year
 
 
+@dataclass()
 class Track:
     """
     Parses and stores data such as title and artist about tracks retrieved from the spotify api
     """
-    def __init__(self, title, artist, added_at, uri):
-        self.title = title
-        self.artist = artist
-        self.added_at = added_at
-        self.uri = uri
 
-    def parse_track_month(self) -> (str, str):
-        """
-        Parses the date a track was added into a tuple of strings
-        """
-        return extract_month_and_year(self.added_at)
+    title: str
+    artist: str
+    added_at: str
+    uri: str
+    track_month: tuple[str] = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self.track_month = extract_month_and_year(self.added_at)
+
+    def __repr__(self):
+        cls = self.__class__
+        cls_name = cls.__name__
+        indent = " " * 4
+        res = [f"{cls_name}("]
+        for f in fields(cls):
+            val = getattr(self, f.name)
+            res.append(f"{indent}{f.name} = {val!r}")
+
+        res.append(")")
+        return "\n".join(res)

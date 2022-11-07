@@ -12,7 +12,7 @@ from rich.console import Console
 from structlog import get_logger
 from structlog.stdlib import recreate_defaults
 
-from date_parser import sort_chronologically
+from utils import sort_chronologically
 from track import Track
 
 MAX_TRIES = 3
@@ -57,7 +57,7 @@ class Monthify:
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.LOGOUT = LOGOUT
         self.has_created_playlists = False
-        self.current_username = self.sp.current_user()["uri"][13:]
+        self.current_username = self.getUsername()
         self.current_display_name = self.sp.current_user()["display_name"]
         self.track_list = []
         self.playlist_names = []
@@ -128,6 +128,9 @@ class Monthify:
         with open(last_run_file, "w", encoding="utf_8") as f:
             f.write(self.last_run)
 
+    def getUsername(self):
+        return self.sp.current_user()["uri"][13:]
+
     @cached(saved_tracks_cache)
     def get_user_saved_tracks(self):
         """
@@ -146,7 +149,6 @@ class Monthify:
         logger.info("Ending user saved tracks fetch")
         return results
 
-    # @cached(saved_playlists_cache)
     @conditional_decorator(cached(saved_playlists_cache), "has_created_playlists")
     def get_user_saved_playlists(self):
         """
@@ -196,7 +198,9 @@ class Monthify:
         count = 0
         logger.info("Playlist creation called", name=str(name))
         for _, item in enumerate(playlists):
-            playlist_name = str(item["name"]).encode("utf-8", errors="xmlcharrefreplace").lower()
+            playlist_name = (
+                str(item["name"]).encode("utf-8", errors="xmlcharrefreplace").lower()
+            )
             to_be_added_name = name.encode("utf-8", errors="xmlcharrefreplace").lower()
             # logger.info("Playlist checking", playlist_name=playlist_name, to_be_added_name=to_be_added_name)
             if playlist_name == to_be_added_name:
@@ -247,7 +251,7 @@ class Monthify:
         """
         logger.info("Generating playlist names")
         # console.print("Retrieving relevant playlist information")
-        self.playlist_names = [(track.parse_track_month()) for track in self.track_list]
+        self.playlist_names = [track.track_month for track in self.track_list]
         unsorted_playlist_names = [*set(self.playlist_names)]
         self.playlist_names = sort_chronologically(unsorted_playlist_names)
         logger.info("Removing duplicate playlist names")
@@ -262,9 +266,11 @@ class Monthify:
             playlists = self.get_user_saved_playlists()
             for month, year in self.playlist_names:
                 for idx, item in enumerate(playlists):
-                    if (month + " '" + year[2:]).encode("utf-8", errors="xmlcharrefreplace").lower() == item[
-                        "name"
-                    ].encode("utf-8", errors="xmlcharrefreplace").lower():
+                    if (month + " '" + year[2:]).encode(
+                        "utf-8", errors="xmlcharrefreplace"
+                    ).lower() == item["name"].encode(
+                        "utf-8", errors="xmlcharrefreplace"
+                    ).lower():
                         self.playlist_names_with_id.append((month, year, item["id"]))
                         logger.info(
                             "Playlist name with ids",
@@ -348,13 +354,13 @@ class Monthify:
             with open(existing_playlists_file, "w", encoding="utf_8") as f:
                 f.write("\n".join(self.already_created_playlists))
 
-    def add_to_playlist(self, tracks_info: list, playlist_id):
+    def add_to_playlist(self, tracks: list[Track], playlist_id):
         """
         Add a list of tracks to a specified playlist using playlist id
         """
         logger.info(
             "Attempting to add tracks to playlist",
-            tracks=tracks_info,
+            tracks=tracks,
             playlist=str(playlist_id),
         )
         playlist_items = self.get_playlist_items(playlist_id)
@@ -362,22 +368,20 @@ class Monthify:
 
         playlist_uris = [item["track"]["uri"] for _, item in enumerate(playlist_items)]
 
-        for track_title, track_artist, track_uri in tracks_info:
+        for track in tracks:
             log = logger.bind(
-                track_title=str(track_title),
-                track_artist=str(track_artist),
-                track_uri=str(track_uri),
+                track=track,
                 playlist=str(playlist_id),
             )
-            if track_uri in playlist_uris:
+            if track.uri in playlist_uris:
                 log.info("Track already in playlist")
                 console.print(
                     "[bold red][-][/bold red]\t[link=https://open.%s][cyan]%s by %s[/cyan][/link] already exists "
                     "in the playlist "
                     % (
-                        (track_uri.replace(":", "/").replace("spotify", "spotify.com")),
-                        track_title,
-                        track_artist,
+                        (track.uri.replace(":", "/").replace("spotify", "spotify.com")),
+                        track.title,
+                        track.artist,
                     )
                 )
             else:
@@ -387,12 +391,12 @@ class Monthify:
                     "will be "
                     "added to the playlist "
                     % (
-                        (track_uri.replace(":", "/").replace("spotify", "spotify.com")),
-                        track_title,
-                        track_artist,
+                        (track.uri.replace(":", "/").replace("spotify", "spotify.com")),
+                        track.title,
+                        track.artist,
                     )
                 )
-                to_be_added_uris.append(track_uri)
+                to_be_added_uris.append(track.uri)
         if not to_be_added_uris:
             # logger.info("No track to add to playlist", tracks=to_be_added_uris, playlist=playlist_id)
             console.print("\tNo tracks to add\n", style="bold red", end="\r")
@@ -439,16 +443,16 @@ class Monthify:
                     "Sorting into playlist %s '%s https://open.spotify.com/playlist/%s"
                     % (month, year[2:], p_id)
                 )
-                tracks_info = [
-                    (track.title, track.artist, track.uri)
+                tracks = [
+                    track
                     for track in self.track_list
-                    if track.parse_track_month() == (month, year)
+                    if track.track_month == (month, year)
                 ]
-                if not tracks_info:
+                if not tracks:
                     break
                 else:
                     logger.info("Adding tracks to playlist", playlist=str(p_id))
-                    self.add_to_playlist(tracks_info, p_id)
+                    self.add_to_playlist(tracks, p_id)
 
         console.print("Finished playlist sort")
         logger.info("Finished program execution")

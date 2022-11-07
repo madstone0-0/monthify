@@ -29,4 +29,3 @@ class Auth:
             self.scope_read_private_playlist,
             self.scope_modify_private_playlist,
         )
-

@@ -1,4 +1,7 @@
 #!python3
+import rich.errors
+from urllib3.exceptions import NewConnectionError
+
 from monthify import Monthify
 import argparse
 from rich.console import Console
@@ -50,7 +53,6 @@ LOGOUT = args.logout
 if not CLIENT_ID or not CLIENT_SECRET:
     console.print("Client id and secret needed to connect to spotify's servers")
     sys.exit()
-
 
 if __name__ == "__main__":
     try:
