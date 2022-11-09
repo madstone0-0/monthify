@@ -245,7 +245,6 @@ class Monthify:
                 )
                 for _, item in enumerate(tracks)
             ]
-        # console.print("Finished retrieving user saved tracks")
 
     def get_playlist_names_names(self):
         """
@@ -279,7 +278,6 @@ class Monthify:
                             name=str(month + " '" + year[2:]),
                             id=str(item["id"]),
                         )
-        # console.print("Finished retrieving relevant playlist information")
 
     def create_monthly_playlists(self):
         """

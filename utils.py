@@ -1,5 +1,5 @@
 #!python3
-# Month and year parser
+# Utilities
 
 import datetime
 

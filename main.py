@@ -1,12 +1,12 @@
 #!python3
-import rich.errors
-from urllib3.exceptions import NewConnectionError
 
-from monthify import Monthify
 import argparse
-from rich.console import Console
 import sys
+
+from rich.console import Console
+
 from auth import Auth
+from monthify import Monthify
 
 console = Console()
 parser = argparse.ArgumentParser(

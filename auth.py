@@ -1,5 +1,5 @@
 #!python3
-# -*- coding: utf-8 -*-
+# Authentication manager
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
