@@ -32,6 +32,7 @@ last_run_file = "last_run.txt"
 last_run_format = "%Y-%m-%d %H:%M:%S"
 saved_tracks_cache = TTLCache(maxsize=1000, ttl=86400)
 saved_playlists_cache = TTLCache(maxsize=1000, ttl=86400)
+user_cache = TTLCache(maxsize=1, ttl=86400)
 
 
 def conditional_decorator(dec, attribute):
@@ -57,8 +58,8 @@ class Monthify:
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.LOGOUT = LOGOUT
         self.has_created_playlists = False
-        self.current_username = self.getUsername()
-        self.current_display_name = self.sp.current_user()["display_name"]
+        self.current_username = self.getUsername()["uri"][13:]
+        self.current_display_name = self.getUsername()["display_name"]
         self.track_list = []
         self.playlist_names = []
         self.already_created_playlists_exists = False
@@ -128,8 +129,9 @@ class Monthify:
         with open(last_run_file, "w", encoding="utf_8") as f:
             f.write(self.last_run)
 
+    @cached(user_cache)
     def getUsername(self):
-        return self.sp.current_user()["uri"][13:]
+        return self.sp.current_user()
 
     @cached(saved_tracks_cache)
     def get_user_saved_tracks(self):
