@@ -293,10 +293,7 @@ class Monthify:
         else:
             last_run = self.last_run
 
-        if (
-            datetime.strptime(last_run, last_run_format).strftime("%B")
-            != datetime.now().strftime("%B")
-        ) and self.already_created_playlists_exists is False:
+        def playlist_loop():
             for month, year in self.playlist_names:
                 playlist_name = str(month + " '" + year[2:])
                 if (
@@ -309,6 +306,12 @@ class Monthify:
                 else:
                     name = month + " '" + year[2:]
                     self.create_playlist(name)
+
+        if (
+            datetime.strptime(last_run, last_run_format).strftime("%B")
+            != datetime.now().strftime("%B")
+        ) and self.already_created_playlists_exists is False:
+            playlist_loop()
 
         if (
             self.SKIP_PLAYLIST_CREATION is False
@@ -325,18 +328,7 @@ class Monthify:
                 logger.info("Playlist generation skipped")
             else:
                 logger.info("Playlist generation starting")
-                for month, year in self.playlist_names:
-                    playlist_name = str(month + " '" + year[2:])
-                    if (
-                        playlist_name in self.already_created_playlists
-                        and playlist_name in spotify_playlists
-                    ):
-                        console.print(
-                            "%s playlist already exists" % (month + " '" + year[2:])
-                        )
-                    else:
-                        name = month + " '" + year[2:]
-                        self.create_playlist(name)
+                playlist_loop()
         else:
             console.print("Playlist generation skipped")
             logger.info("Playlist generation skipped")
@@ -437,11 +429,11 @@ class Monthify:
             )
 
         with console.status("Sorting Tracks"):
-            for month, year, p_id in self.playlist_names_with_id:
+            for month, year, playlist_id in self.playlist_names_with_id:
                 logger.info("Sorting into playlist", playlist=(month, year[2:]))
                 console.rule(
                     "Sorting into playlist %s '%s https://open.spotify.com/playlist/%s"
-                    % (month, year[2:], p_id)
+                    % (month, year[2:], playlist_id)
                 )
                 tracks = [
                     track
@@ -451,8 +443,8 @@ class Monthify:
                 if not tracks:
                     break
                 else:
-                    logger.info("Adding tracks to playlist", playlist=str(p_id))
-                    self.add_to_playlist(tracks, p_id)
+                    logger.info("Adding tracks to playlist", playlist=str(playlist_id))
+                    self.add_to_playlist(tracks, playlist_id)
 
         console.print("Finished playlist sort")
         logger.info("Finished program execution")
