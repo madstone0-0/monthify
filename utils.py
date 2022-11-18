@@ -18,3 +18,7 @@ def sort_chronologically(playlist_names) -> list[str]:
         reverse=True,
     )
     return sorted_list
+
+
+def normalize_text(text) -> bytes:
+    return str(text).encode("utf-8", errors="xmlcharrefreplace").lower()

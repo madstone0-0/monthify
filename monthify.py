@@ -12,7 +12,7 @@ from rich.console import Console
 from structlog import get_logger
 from structlog.stdlib import recreate_defaults
 
-from utils import sort_chronologically
+from utils import sort_chronologically, normalize_text
 from track import Track
 
 MAX_TRIES = 3
@@ -200,12 +200,7 @@ class Monthify:
         count = 0
         logger.info("Playlist creation called", name=str(name))
         for _, item in enumerate(playlists):
-            playlist_name = (
-                str(item["name"]).encode("utf-8", errors="xmlcharrefreplace").lower()
-            )
-            to_be_added_name = name.encode("utf-8", errors="xmlcharrefreplace").lower()
-            # logger.info("Playlist checking", playlist_name=playlist_name, to_be_added_name=to_be_added_name)
-            if playlist_name == to_be_added_name:
+            if normalize_text(item["name"]) == normalize_text(name):
                 count += 1
                 console.print(f"Playlist {name} already exists")
                 self.already_created_playlists_inter.append(name)
@@ -267,11 +262,7 @@ class Monthify:
             playlists = self.get_user_saved_playlists()
             for month, year in self.playlist_names:
                 for idx, item in enumerate(playlists):
-                    if (month + " '" + year[2:]).encode(
-                        "utf-8", errors="xmlcharrefreplace"
-                    ).lower() == item["name"].encode(
-                        "utf-8", errors="xmlcharrefreplace"
-                    ).lower():
+                    if normalize_text((month + " '" + year[2:])) == normalize_text(item["name"]):
                         self.playlist_names_with_id.append((month, year, item["id"]))
                         logger.info(
                             "Playlist name with ids",
