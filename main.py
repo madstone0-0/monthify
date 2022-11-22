@@ -12,6 +12,9 @@ console = Console()
 parser = argparse.ArgumentParser(
     prog="monthify", description="Sorts saved spotify tracks by month saved"
 )
+
+creation_group = parser.add_mutually_exclusive_group()
+
 parser.add_argument(
     "--CLIENT_ID",
     metavar="client_id",
@@ -29,14 +32,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--skip-playlist-creation",
-    default=False,
-    required=False,
-    action="store_true",
-    help="Skips playlist generation automatically if already done this month",
-)
-
-parser.add_argument(
     "--logout",
     default=False,
     required=False,
@@ -44,10 +39,27 @@ parser.add_argument(
     help="Logout of currently logged in account",
 )
 
+creation_group.add_argument(
+    "--skip-playlist-creation",
+    default=False,
+    required=False,
+    action="store_true",
+    help="Skips playlist generation automatically",
+)
+
+creation_group.add_argument(
+    "--create-playlists",
+    default=False,
+    required=False,
+    action="store_true",
+    help="Forces playlist generation",
+)
+
 args = parser.parse_args()
 CLIENT_ID = args.CLIENT_ID
 CLIENT_SECRET = args.CLIENT_SECRET
 SKIP_PLAYLIST_CREATION = args.skip_playlist_creation
+CREATE_PLAYLIST = args.create_playlists
 LOGOUT = args.logout
 
 if not CLIENT_ID or not CLIENT_SECRET:
@@ -60,6 +72,7 @@ if __name__ == "__main__":
             Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET),
             SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
             LOGOUT=LOGOUT,
+            CREATE_PLAYLIST=CREATE_PLAYLIST
         )
 
         # Logout of current account if user wishes

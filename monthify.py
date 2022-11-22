@@ -52,10 +52,11 @@ def conditional_decorator(dec, attribute):
 
 
 class Monthify:
-    def __init__(self, auth, SKIP_PLAYLIST_CREATION, LOGOUT):
+    def __init__(self, auth, SKIP_PLAYLIST_CREATION, LOGOUT, CREATE_PLAYLIST):
         authentication = auth
         self.sp = authentication.get_spotipy()
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
+        self.CREATE_PLAYLIST = CREATE_PLAYLIST
         self.LOGOUT = LOGOUT
         self.has_created_playlists = False
         self.current_username = self.getUsername()["uri"][13:]
@@ -278,6 +279,7 @@ class Monthify:
         spotify_playlists = [
             item[1]["name"] for item in enumerate(self.get_user_saved_playlists())
         ]
+        monthly_ran = False
         last_run = ""
         if self.last_run == "":
             last_run = datetime.now().strftime(last_run_format)
@@ -302,27 +304,32 @@ class Monthify:
             datetime.strptime(last_run, last_run_format).strftime("%B")
             != datetime.now().strftime("%B")
         ) and self.already_created_playlists_exists is False:
+            monthly_ran = True
             playlist_loop()
 
-        if (
-            self.SKIP_PLAYLIST_CREATION is False
-            or self.already_created_playlists_exists is False
-        ):
-            console.print(
-                "Playlist generation has already occurred this month, do you still want to generate "
-                "playlists? (yes/no)"
-            )
-            logger.info("Requesting playlist creation")
+        if self.CREATE_PLAYLIST is False:
+            if (
+                    self.SKIP_PLAYLIST_CREATION is False and monthly_ran is False
+                    or self.already_created_playlists_exists is False
+            ):
+                console.print(
+                    "Playlist generation has already occurred this month, do you still want to generate "
+                    "playlists? (yes/no)"
+                )
+                logger.info("Requesting playlist creation")
 
-            if not console.input("> ").lower().startswith("y"):
+                if not console.input("> ").lower().startswith("y"):
+                    console.print("Playlist generation skipped")
+                    logger.info("Playlist generation skipped")
+                else:
+                    logger.info("Playlist generation starting")
+                    playlist_loop()
+            else:
                 console.print("Playlist generation skipped")
                 logger.info("Playlist generation skipped")
-            else:
-                logger.info("Playlist generation starting")
-                playlist_loop()
         else:
-            console.print("Playlist generation skipped")
-            logger.info("Playlist generation skipped")
+            logger.info("Playlist generation starting")
+            playlist_loop()
 
         if self.already_created_playlists_inter:
             self.already_created_playlists = [
