@@ -1,5 +1,4 @@
-#!python3
-# Track class to manage track data
+# Track dataclass
 
 from dataclasses import dataclass, field, fields
 
