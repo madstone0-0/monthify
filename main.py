@@ -72,7 +72,7 @@ if __name__ == "__main__":
             Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET),
             SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
             LOGOUT=LOGOUT,
-            CREATE_PLAYLIST=CREATE_PLAYLIST
+            CREATE_PLAYLIST=CREATE_PLAYLIST,
         )
 
         # Logout of current account if user wishes
