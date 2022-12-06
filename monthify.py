@@ -1,5 +1,5 @@
 # Business logic
-
+import sys
 from datetime import datetime
 from logging import INFO, basicConfig
 from os import makedirs, remove, stat
@@ -8,8 +8,7 @@ from pathlib import Path
 
 from cachetools import cached, TTLCache
 from rich.console import Console
-from structlog import get_logger
-from structlog.stdlib import recreate_defaults
+from loguru import logger
 
 from utils import sort_chronologically, normalize_text
 from track import Track
@@ -17,14 +16,15 @@ from track import Track
 MAX_TRIES = 3
 MAX_RESULTS = 10000
 
-recreate_defaults(log_level=None)
 makedirs("logs", exist_ok=True)
-basicConfig(
-    filename="logs/monthly_playlist_%s.log" % (datetime.now().strftime("%d_%m_%Y")),
-    encoding="utf-8",
-    level=INFO,
+logger.add(
+    sys.stderr,
+    format="{time} {level} {message}",
+    filter="monthify",
+    level="INFO",
 )
-logger = get_logger(__name__)
+logger.remove()
+logger.add("logs/monthify.log", rotation="00:00", compression="zip")
 console = Console()
 existing_playlists_file = "existing_playlists_file.dat"
 last_run_file = "last_run.txt"
@@ -119,6 +119,7 @@ class Monthify:
         Staring function
         Displays project name and current username
         """
+        logger.info("Starting script execution")
         console.print(f"[green]{self.name}[/green]")
         console.print(f"Username: [cyan]{self.current_display_name}[/cyan]")
 
@@ -145,7 +146,7 @@ class Monthify:
             try:
                 result = self.sp.current_user_saved_tracks(limit=50, offset=i)
             except ConnectionError as e:
-                logger.error("Failed to reach spotify server trying", exception=e)
+                logger.error("Failed to reach spotify server trying exception: {e}", e)
             if result["total"] == len(results):
                 break
             results += [*result["items"]]
@@ -163,7 +164,7 @@ class Monthify:
             try:
                 result = self.sp.current_user_playlists(limit=50, offset=i)
             except ConnectionError as e:
-                logger.error("Failed to reach spotify server trying", exception=e)
+                logger.error(f"Failed to reach spotify server trying exception: {e}", e)
             if result["total"] == len(results):
                 break
             results += [*result["items"]]
@@ -175,18 +176,20 @@ class Monthify:
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
         results = []
-        logger.info("Starting playlist item fetch", playlist_id=str(playlist_id))
+        logger.info(f"Starting playlist item fetch\n id: {playlist_id}", playlist_id)
         for i in range(0, MAX_RESULTS, 20):
             try:
                 result = self.sp.playlist_items(
                     playlist_id=playlist_id, fields=None, limit=20, offset=i
                 )
             except ConnectionError as e:
-                logger.error("Failed to reach spotify server trying", exception=e)
+                logger.error(
+                    f"Failed to reach spotify server trying\n exception: {e}", e
+                )
             if result["total"] == len(results):
                 break
             results += [*result["items"]]
-        logger.info("Ending playlist item fetch", playlist_id=str(playlist_id))
+        logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
         return results
 
     def create_playlist(self, name):
@@ -199,19 +202,19 @@ class Monthify:
         already_created_playlists = []
         created_playlists = []
         count = 0
-        logger.info("Playlist creation called", name=str(name))
+        logger.info(f"Playlist creation called {name}")
         for _, item in enumerate(playlists):
             if normalize_text(item["name"]) == normalize_text(name):
                 count += 1
                 console.print(f"Playlist {name} already exists")
                 self.already_created_playlists_inter.append(name)
-                logger.info("Playlist already exists", name=str(name))
+                logger.info(f"Playlist already exists {name}")
                 return
         if count != 0:
             console.print(f"Playlist {name} already exists")
         else:
             console.print(f"Creating playlist {name}")
-            logger.info("Creating playlist", name=str(name))
+            logger.info(f"Creating playlist {name}")
             playlist = sp.user_playlist_create(
                 user=self.current_username,
                 name=name,
@@ -221,7 +224,7 @@ class Monthify:
             )
             created_playlists.append(playlist)
             console.print(f"Added {name} playlist")
-            logger.info("Added playlist", name=str(name))
+            logger.info(f"Added {name} playlist")
         self.has_created_playlists = True if created_playlists.__len__() > 0 else False
         self.already_created_playlists_inter = already_created_playlists
 
@@ -252,7 +255,7 @@ class Monthify:
         unsorted_playlist_names = [*set(self.playlist_names)]
         self.playlist_names = sort_chronologically(unsorted_playlist_names)
         logger.info("Removing duplicate playlist names")
-        logger.info("Final list", playlist_names=self.playlist_names)
+        logger.info(f"Final list: {self.playlist_names}")
 
     def get_monthly_playlist_ids(self):
         """
@@ -268,7 +271,7 @@ class Monthify:
                     ):
                         self.playlist_names_with_id.append((month, year, item["id"]))
                         logger.info(
-                            "Playlist name with ids",
+                            "Playlist name: {name} id: {id}",
                             name=str(month + " '" + year[2:]),
                             id=str(item["id"]),
                         )
@@ -352,7 +355,7 @@ class Monthify:
         Add a list of tracks to a specified playlist using playlist id
         """
         logger.info(
-            "Attempting to add tracks to playlist",
+            "Attempting to add tracks to playlist: {playlist}\ntracks: {tracks} ",
             tracks=tracks,
             playlist=str(playlist_id),
         )
@@ -362,12 +365,8 @@ class Monthify:
         playlist_uris = [item["track"]["uri"] for _, item in enumerate(playlist_items)]
 
         for track in tracks:
-            log = logger.bind(
-                track=track,
-                playlist=str(playlist_id),
-            )
             if track.uri in playlist_uris:
-                log.info("Track already in playlist")
+                logger.info(f"Track: {track} already in playlist: {str(playlist_id)}")
                 console.print(
                     "[bold red][-][/bold red]\t[link=https://open.%s][cyan]%s by %s[/cyan][/link] already exists "
                     "in the playlist "
@@ -378,7 +377,7 @@ class Monthify:
                     )
                 )
             else:
-                log.info("Track will be added to playlist")
+                logger.info(f"Track: {track} will be added to playlist: {str(playlist_id)}")
                 console.print(
                     "[bold green][+][/bold green]\t[link=https://open.%s][bold green]%s by %s[/bold green][/link] "
                     "will be "
@@ -391,10 +390,10 @@ class Monthify:
                 )
                 to_be_added_uris.append(track.uri)
         if not to_be_added_uris:
-            # logger.info("No track to add to playlist", tracks=to_be_added_uris, playlist=playlist_id)
+            logger.info("No tracks to add to playlist: {playlist}", playlist=playlist_id)
             console.print("\tNo tracks to add\n", style="bold red", end="\r")
         else:
-            # logger.info("Adding tracks to playlist", tracks=to_be_added_uris, playlist=playlist_id)
+            logger.info("Adding tracks: {tracks} to playlist: {playlist}", tracks=(" ".join(to_be_added_uris)), playlist=playlist_id)
             to_be_added_uris_chunks = [
                 to_be_added_uris[x : x + 100]
                 for x in range(0, len(to_be_added_uris), 100)
@@ -431,7 +430,10 @@ class Monthify:
 
         with console.status("Sorting Tracks"):
             for month, year, playlist_id in self.playlist_names_with_id:
-                logger.info("Sorting into playlist", playlist=(month, year[2:]))
+                logger.info(
+                    "Sorting into playlist: {playlist}",
+                    playlist=(month, year[2:]),
+                )
                 console.rule(
                     "Sorting into playlist %s '%s https://open.spotify.com/playlist/%s"
                     % (month, year[2:], playlist_id)
@@ -444,8 +446,11 @@ class Monthify:
                 if not tracks:
                     break
                 else:
-                    logger.info("Adding tracks to playlist", playlist=str(playlist_id))
+                    logger.info(
+                        "Adding tracks to playlist: {playlist}",
+                        playlist=str(playlist_id),
+                    )
                     self.add_to_playlist(tracks, playlist_id)
 
         console.print("Finished playlist sort")
-        logger.info("Finished program execution")
+        logger.info("Finished script execution")
