@@ -4,3 +4,4 @@
 *.bat
 *.dat
 last_run.txt
+logs/*
