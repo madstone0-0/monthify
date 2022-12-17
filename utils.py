@@ -21,3 +21,19 @@ def sort_chronologically(playlist_names) -> list[str]:
 
 def normalize_text(text) -> bytes:
     return str(text).encode("utf-8", errors="xmlcharrefreplace").lower()
+
+
+def conditional_decorator(dec, attribute):
+    """
+    Cache decorator wrapper to ensure fresh results if playlists have been created
+    """
+
+    def decorator(func):
+        def wrapper(self):
+            if getattr(self, attribute) is True:
+                return func(self)
+            return dec(func)(self)
+
+        return wrapper
+
+    return decorator
