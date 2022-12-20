@@ -16,7 +16,6 @@ from utils import (
     conditional_decorator,
 )
 
-MAX_TRIES = 3
 MAX_RESULTS = 10000
 
 makedirs("logs", exist_ok=True)
@@ -131,13 +130,15 @@ class Monthify:
         """
         Retrieves the current user's saved spotify tracks
         """
-        results = []
         logger.info("Starting user saved tracks fetch")
-        for i in range(0, MAX_RESULTS, 50):
-            result = self.sp.current_user_saved_tracks(limit=50, offset=i)
-            if result["total"] == len(results):
-                break
+        results = []
+        result = self.sp.current_user_saved_tracks(limit=50)
+        while result:
             results += [*result["items"]]
+            if result["next"]:
+                result = self.sp.next(result)
+            else:
+                result = None
         logger.info("Ending user saved tracks fetch")
         return results
 
@@ -148,13 +149,15 @@ class Monthify:
         """
         Retrieves the current user's created or liked spotify playlists
         """
-        results = []
         logger.info("Starting user saved playlists fetch")
-        for i in range(0, MAX_RESULTS, 50):
-            result = self.sp.current_user_playlists(limit=50, offset=i)
-            if result["total"] == len(results):
-                break
+        results = []
+        result = self.sp.current_user_playlists(limit=50)
+        while result:
             results += [*result["items"]]
+            if result["next"]:
+                result = self.sp.next(result)
+            else:
+                result = None
         logger.info("Ending user saved playlists fetch")
         return results
 
@@ -162,17 +165,19 @@ class Monthify:
         """
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
-        results = []
         logger.info(
             f"Starting playlist item fetch\n id: {playlist_id}", playlist_id
         )
-        for i in range(0, MAX_RESULTS, 20):
-            result = self.sp.playlist_items(
-                playlist_id=playlist_id, fields=None, limit=20, offset=i
-            )
-            if result["total"] == len(results):
-                break
+        results = []
+        result = self.sp.playlist_items(
+            playlist_id=playlist_id, fields=None, limit=20
+        )
+        while result:
             results += [*result["items"]]
+            if result["next"]:
+                result = self.sp.next(result)
+            else:
+                result = None
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
         return results
 
