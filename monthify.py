@@ -241,7 +241,6 @@ class Monthify:
         Generates month playlist names using the added_at attribute of the Track type
         """
         logger.info("Generating playlist names")
-        # console.print("Retrieving relevant playlist information")
         self.playlist_names = [track.track_month for track in self.track_list]
         unsorted_playlist_names = [*set(self.playlist_names)]
         self.playlist_names = sort_chronologically(unsorted_playlist_names)
