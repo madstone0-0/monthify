@@ -37,6 +37,8 @@ user_cache = TTLCache(maxsize=1, ttl=86400)
 
 
 class Monthify:
+    total_tracks_added = 0
+
     def __init__(self, auth, SKIP_PLAYLIST_CREATION, LOGOUT, CREATE_PLAYLIST):
         authentication = auth
         self.sp = authentication.get_spotipy()
@@ -401,6 +403,7 @@ class Monthify:
             for chunk in to_be_added_uris_chunks:
                 self.sp.playlist_add_items(playlist_id=playlist_id, items=chunk)
             console.print("\n")
+            self.total_tracks_added += len(to_be_added_uris)
         logger.info("Ended track addition")
 
     def sort_tracks_by_month(self):
@@ -457,5 +460,16 @@ class Monthify:
                     )
                     self.add_to_playlist(tracks, playlist_id)
 
+        count = ""
+        if self.total_tracks_added == 0:
+            count = "No new tracks added"
+        elif self.total_tracks_added == 1:
+            count = "One track added"
+        elif self.total_tracks_added > 1:
+            count = f"Total tracks added: {self.total_tracks_added}"
+
+        console.print(
+            count
+        )
         console.print("Finished playlist sort")
         logger.info("Finished script execution")
