@@ -5,3 +5,4 @@
 *.dat
 last_run.txt
 logs/*
+.idea/*
