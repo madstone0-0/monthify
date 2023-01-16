@@ -5,8 +5,8 @@ import sys
 
 from rich.console import Console
 
-from auth import Auth
-from monthify import Monthify
+from .auth import Auth
+from .monthify import Monthify
 
 console = Console()
 parser = argparse.ArgumentParser(
@@ -66,7 +66,8 @@ if not CLIENT_ID or not CLIENT_SECRET:
     console.print("Client id and secret needed to connect to spotify's servers")
     sys.exit()
 
-if __name__ == "__main__":
+
+def run():
     try:
         controller = Monthify(
             Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET),
@@ -100,3 +101,7 @@ if __name__ == "__main__":
         controller.update_last_run()
     except KeyboardInterrupt:
         console.print("Exiting...")
+
+
+if __name__ == "__main__":
+    run()
