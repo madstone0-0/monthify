@@ -4,10 +4,13 @@ import argparse
 import sys
 
 from rich.console import Console
+from appdirs import user_data_dir
+from .auth import Auth
+from .monthify import Monthify
 
-from auth import Auth
-from monthify import Monthify
-
+appname = "Monthify"
+appauthor = "madstone0-0"
+appdata_location = user_data_dir(appname, appauthor)
 console = Console()
 parser = argparse.ArgumentParser(
     prog="monthify", description="Sorts saved spotify tracks by month saved"
@@ -66,17 +69,19 @@ if not CLIENT_ID or not CLIENT_SECRET:
     console.print("Client id and secret needed to connect to spotify's servers")
     sys.exit()
 
-if __name__ == "__main__":
+
+def run():
     try:
         controller = Monthify(
-            Auth(CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET),
+            Auth(
+                CLIENT_ID=CLIENT_ID,
+                CLIENT_SECRET=CLIENT_SECRET,
+                LOCATION=appdata_location,
+            ),
             SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
             LOGOUT=LOGOUT,
             CREATE_PLAYLIST=CREATE_PLAYLIST,
         )
-
-        # Logout of current account if user wishes
-        controller.logout()
 
         # Starting info
         controller.starting()
@@ -100,3 +105,7 @@ if __name__ == "__main__":
         controller.update_last_run()
     except KeyboardInterrupt:
         console.print("Exiting...")
+
+
+if __name__ == "__main__":
+    run()

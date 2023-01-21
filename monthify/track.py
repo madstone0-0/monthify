@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, fields
 
-from utils import extract_month_and_year
+from .utils import extract_month_and_year
 
 
 @dataclass()
@@ -23,11 +23,10 @@ class Track:
     def __repr__(self):
         cls = self.__class__
         cls_name = cls.__name__
-        indent = " " * 4
         res = [f"{cls_name}("]
         for f in fields(cls):
             val = getattr(self, f.name)
-            res.append(f"{indent}{f.name} = {val!r}")
+            res.append(f" {f.name} = {val!r}")
 
         res.append(")")
-        return "\n".join(res)
+        return "".join(res)
