@@ -4,7 +4,7 @@ from datetime import datetime
 from os import makedirs, remove, stat
 from os.path import exists
 from pathlib import Path
-
+from appdirs import user_data_dir
 from cachetools import cached, TTLCache
 from loguru import logger
 from rich.console import Console
@@ -16,9 +16,13 @@ from .utils import (
     conditional_decorator,
 )
 
+appname = "Monthify"
+appauthor = "madstone0-0"
+appdata_location = user_data_dir(appname, appauthor)
+
 MAX_RESULTS = 10000
 
-makedirs("logs", exist_ok=True)
+makedirs(f"{appdata_location}/logs", exist_ok=True)
 logger.add(
     sys.stderr,
     format="{time} {level} {message}",
@@ -26,10 +30,10 @@ logger.add(
     level="INFO",
 )
 logger.remove()
-logger.add("logs/monthify.log", rotation="00:00", compression="zip")
+logger.add(f"{appdata_location}/logs/monthify.log", rotation="00:00", compression="zip")
 console = Console()
-existing_playlists_file = "existing_playlists_file.dat"
-last_run_file = "last_run.txt"
+existing_playlists_file = f"{appdata_location}/existing_playlists_file.dat"
+last_run_file = f"{appdata_location}/last_run.txt"
 last_run_format = "%Y-%m-%d %H:%M:%S"
 saved_tracks_cache = TTLCache(maxsize=1000, ttl=86400)
 saved_playlists_cache = TTLCache(maxsize=1000, ttl=86400)
@@ -96,7 +100,7 @@ class Monthify:
     def logout(self):
         if self.LOGOUT is True:
             try:
-                remove("./.cache")
+                remove(f"{appdata_location}/.cache")
                 logger.info("Successfully deleted .cache file, user logged out")
             except FileNotFoundError:
                 console.print("Not logged into any account", style="bold red")
