@@ -42,11 +42,12 @@ user_cache = TTLCache(maxsize=1, ttl=86400)
 
 class Monthify:
     def __init__(self, auth, SKIP_PLAYLIST_CREATION, LOGOUT, CREATE_PLAYLIST):
+        self.LOGOUT = LOGOUT
+        self.logout()
         authentication = auth
         self.sp = authentication.get_spotipy()
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
-        self.LOGOUT = LOGOUT
         self.has_created_playlists = False
         self.current_username = self.get_username()["uri"][13:]
         self.current_display_name = self.get_username()["display_name"]
@@ -101,10 +102,13 @@ class Monthify:
         if self.LOGOUT is True:
             try:
                 remove(f"{appdata_location}/.cache")
+                console.print("Successfully logged out of saved account", style="bold green")
                 logger.info("Successfully deleted .cache file, user logged out")
+                sys.exit(0)
             except FileNotFoundError:
                 console.print("Not logged into any account", style="bold red")
                 logger.error("Cache file doesn't exist")
+                sys.exit(0)
 
     def starting(self):
         """
@@ -352,7 +356,7 @@ class Monthify:
         for track in tracks:
             if track.uri in playlist_uris:
                 logger.info(f"Track: {track} already in playlist: {str(playlist_id)}")
-                track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
+                track_url = f'https://open.{track.uri. replace(":", "/").replace("spotify", "spotify.com")}'
                 console.print(
                     f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link] already exists "
                     "in the playlist "

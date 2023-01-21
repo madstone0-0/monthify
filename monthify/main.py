@@ -83,9 +83,6 @@ def run():
             CREATE_PLAYLIST=CREATE_PLAYLIST,
         )
 
-        # Logout of current account if user wishes
-        controller.logout()
-
         # Starting info
         controller.starting()
 
