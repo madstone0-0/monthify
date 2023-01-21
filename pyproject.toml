@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "monthify"
+version = "0.2.0"
+description = "Sorts liked spotify tracks into playlists by the month they were liked."
+authors = ["Madiba Hudson-Quansah <mhquansah@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+loguru = "^0.6.0"
+cachetools = "^5.2.1"
+rich = "^13.1.0"
+spotipy = "^2.22.0"
+appdirs = "^1.4.4"
+
+[tool.poetry.group.dev.dependencies]
+icecream = "^2.1.3"
+
+[tool.poetry.scripts]
+monthify = "monthify.main:run"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
