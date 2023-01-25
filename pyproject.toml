@@ -4,6 +4,7 @@ version = "0.2.1"
 description = "Sorts liked spotify tracks into playlists by the month they were liked."
 authors = ["Madiba Hudson-Quansah <mhquansah@gmail.com>"]
 readme = "README.md"
+requires-python =">=3.10"
 
 [tool.poetry.dependencies]
 python = "^3.10"
