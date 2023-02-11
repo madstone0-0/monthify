@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, fields
 
-from .utils import extract_month_and_year
+from utils import extract_month_and_year
 
 
 @dataclass()

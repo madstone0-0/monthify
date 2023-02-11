@@ -9,8 +9,8 @@ from cachetools import cached, TTLCache
 from loguru import logger
 from rich.console import Console
 
-from .track import Track
-from .utils import (
+from track import Track
+from utils import (
     sort_chronologically,
     normalize_text,
     conditional_decorator,
@@ -104,7 +104,9 @@ class Monthify:
         if self.LOGOUT is True:
             try:
                 remove(f"{appdata_location}/.cache")
-                console.print("Successfully logged out of saved account", style="bold green")
+                console.print(
+                    "Successfully logged out of saved account", style="bold green"
+                )
                 logger.info("Successfully deleted .cache file, user logged out")
                 sys.exit(0)
             except FileNotFoundError:
@@ -455,8 +457,6 @@ class Monthify:
         elif self.total_tracks_added > 1:
             count = f"Total tracks added: {self.total_tracks_added}"
 
-        console.print(
-            count
-        )
+        console.print(count)
         console.print("Finished playlist sort")
         logger.info("Finished script execution")
