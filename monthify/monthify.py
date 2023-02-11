@@ -9,8 +9,8 @@ from cachetools import cached, TTLCache
 from loguru import logger
 from rich.console import Console
 
-from track import Track
-from utils import (
+from .track import Track
+from .utils import (
     sort_chronologically,
     normalize_text,
     conditional_decorator,
