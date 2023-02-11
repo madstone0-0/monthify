@@ -11,8 +11,8 @@ else:
 
 from rich.console import Console
 from appdirs import user_data_dir, user_config_dir
-from auth import Auth
-from monthify import Monthify
+from .auth import Auth
+from .monthify import Monthify
 
 CONFIG_FILE_NAME = "monthify.toml"
 using_config_file = False
