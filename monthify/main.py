@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(
 if sys.version_info[1] == 11:
     try:
         with open(
-            f"{appconfig_location}/{CONFIG_FILE_NAME}", "r", encoding="utf-8"
+            f"{appconfig_location}/{CONFIG_FILE_NAME}", "rb"
         ) as config_file:
             using_config_file = True
             config = tomllib.load(config_file)
