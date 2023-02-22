@@ -3,11 +3,7 @@
 import argparse
 import sys
 
-# import tomllib
-if sys.version_info[1] == 11:
-    import tomllib
-else:
-    import toml
+import toml
 
 from rich.console import Console
 from appdirs import user_data_dir, user_config_dir
@@ -26,34 +22,17 @@ else:
     appconfig_location = user_config_dir(appname.lower(), appauthor)
 
 console = Console()
-parser = argparse.ArgumentParser(
-    prog="monthify", description="Sorts saved spotify tracks by month saved"
-)
+parser = argparse.ArgumentParser(prog="monthify", description="Sorts saved spotify tracks by month saved")
 
-if sys.version_info[1] == 11:
-    try:
-        with open(
-            f"{appconfig_location}/{CONFIG_FILE_NAME}", "rb"
-        ) as config_file:
-            using_config_file = True
-            config = tomllib.load(config_file)
-    except FileNotFoundError:
-        using_config_file = False
-    except tomllib.TOMLDecodeError:
-        console.print("Invalid config document")
-        sys.exit(1)
-else:
-    try:
-        with open(
-            f"{appconfig_location}/{CONFIG_FILE_NAME}", "r", encoding="utf-8"
-        ) as config_file:
-            using_config_file = True
-            config = toml.load(config_file)
-    except FileNotFoundError:
-        using_config_file = False
-    except toml.TomlDecodeError:
-        console.print("Invalid config document")
-        sys.exit(1)
+try:
+    with open(f"{appconfig_location}/{CONFIG_FILE_NAME}", "r", encoding="utf-8") as config_file:
+        using_config_file = True
+        config = toml.load(config_file)
+except FileNotFoundError:
+    using_config_file = False
+except toml.TomlDecodeError:
+    console.print("Invalid config document")
+    sys.exit(1)
 
 
 creation_group = parser.add_mutually_exclusive_group()
