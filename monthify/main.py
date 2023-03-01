@@ -7,8 +7,8 @@ import toml
 
 from rich.console import Console
 from appdirs import user_data_dir, user_config_dir
-from .auth import Auth
-from .monthify import Monthify
+from monthify.auth import Auth
+from monthify.script import Monthify
 
 CONFIG_FILE_NAME = "monthify.toml"
 using_config_file = False
@@ -16,16 +16,22 @@ appname = "Monthify"
 appauthor = "madstone0-0"
 appdata_location = user_data_dir(appname, appauthor)
 
+console = Console()
+parser = argparse.ArgumentParser(
+    prog="monthify", description="Sorts saved spotify tracks by month saved"
+)
+
 if sys.platform == "win32" or sys.platform == "darwin":
-    appconfig_location = user_data_dir(appname, appauthor)
+    appconfig_location = appdata_location
 else:
     appconfig_location = user_config_dir(appname.lower(), appauthor)
 
-console = Console()
-parser = argparse.ArgumentParser(prog="monthify", description="Sorts saved spotify tracks by month saved")
 
+config = None
 try:
-    with open(f"{appconfig_location}/{CONFIG_FILE_NAME}", "r", encoding="utf-8") as config_file:
+    with open(
+        f"{appconfig_location}/{CONFIG_FILE_NAME}", "r", encoding="utf-8"
+    ) as config_file:
         using_config_file = True
         config = toml.load(config_file)
 except FileNotFoundError:
@@ -82,7 +88,7 @@ if not using_config_file:
     CLIENT_ID = args.CLIENT_ID
     CLIENT_SECRET = args.CLIENT_SECRET
 else:
-    if len(config) == 0:
+    if config is None or len(config) == 0:
         console.print("Config file empty")
         sys.exit(1)
     if not config["CLIENT_ID"] or not config["CLIENT_SECRET"]:
