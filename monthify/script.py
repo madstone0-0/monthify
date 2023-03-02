@@ -132,6 +132,16 @@ class Monthify:
         with open(last_run_file, "w", encoding="utf_8") as f:
             f.write(self.last_run)
 
+    def getResults(self, result):
+        results = []
+        while result:
+            results += [*result["items"]]
+            if result["next"]:
+                result = self.sp.next(result)
+            else:
+                result = None
+        return results
+
     @cached(user_cache)
     def get_username(self):
         return self.sp.current_user()
@@ -142,14 +152,7 @@ class Monthify:
         Retrieves the current user's saved spotify tracks
         """
         logger.info("Starting user saved tracks fetch")
-        results = []
-        result = self.sp.current_user_saved_tracks(limit=50)
-        while result:
-            results += [*result["items"]]
-            if result["next"]:
-                result = self.sp.next(result)
-            else:
-                result = None
+        results = self.getResults(self.sp.current_user_saved_tracks(limit=50))
         logger.info("Ending user saved tracks fetch")
         return results
 
@@ -159,14 +162,7 @@ class Monthify:
         Retrieves the current user's created or liked spotify playlists
         """
         logger.info("Starting user saved playlists fetch")
-        results = []
-        result = self.sp.current_user_playlists(limit=50)
-        while result:
-            results += [*result["items"]]
-            if result["next"]:
-                result = self.sp.next(result)
-            else:
-                result = None
+        results = self.getResults(self.sp.current_user_playlists(limit=50))
         logger.info("Ending user saved playlists fetch")
         return results
 
@@ -175,14 +171,7 @@ class Monthify:
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
         logger.info(f"Starting playlist item fetch\n id: {playlist_id}", playlist_id)
-        results = []
-        result = self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20)
-        while result:
-            results += [*result["items"]]
-            if result["next"]:
-                result = self.sp.next(result)
-            else:
-                result = None
+        results = self.getResults(self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20))
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
         return results
 
@@ -219,7 +208,7 @@ class Monthify:
             created_playlists.append(playlist)
             console.print(f"Added {name} playlist")
             logger.info(f"Added {name} playlist")
-        self.has_created_playlists = True if created_playlists.__len__() > 0 else False
+        self.has_created_playlists = True if len(created_playlists) > 0 else False
         self.already_created_playlists_inter = already_created_playlists
 
     def get_saved_track_info(self):
