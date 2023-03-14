@@ -4,6 +4,7 @@ import argparse
 import sys
 
 import toml
+from importlib.metadata import version
 
 from rich.console import Console
 from appdirs import user_data_dir, user_config_dir
@@ -67,6 +68,15 @@ parser.add_argument(
     help="Logout of currently logged in account",
 )
 
+parser.add_argument(
+    "--version",
+    "-v",
+    default=False,
+    required=False,
+    action="store_true",
+    help="Displays version then exits",
+)
+
 creation_group.add_argument(
     "--skip-playlist-creation",
     default=False,
@@ -101,6 +111,7 @@ else:
 SKIP_PLAYLIST_CREATION = args.skip_playlist_creation
 CREATE_PLAYLIST = args.create_playlists
 LOGOUT = args.logout
+VERSION = args.version
 
 if not CLIENT_ID or not CLIENT_SECRET:
     console.print("Client id and secret needed to connect to spotify's servers")
@@ -108,6 +119,10 @@ if not CLIENT_ID or not CLIENT_SECRET:
 
 
 def run():
+    if VERSION:
+        console.print(f"v{version('monthify')}")
+        sys.exit(0)
+
     try:
         controller = Monthify(
             Auth(
