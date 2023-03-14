@@ -171,7 +171,9 @@ class Monthify:
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
         logger.info(f"Starting playlist item fetch\n id: {playlist_id}", playlist_id)
-        results = self.getResults(self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20))
+        results = self.getResults(
+            self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20)
+        )
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
         return results
 
