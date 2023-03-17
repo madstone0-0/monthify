@@ -1,0 +1,3 @@
+select = ["E", "F", "I", "PL"]
+
+line-length = 120

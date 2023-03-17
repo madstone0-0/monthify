@@ -4,17 +4,17 @@ from datetime import datetime
 from os import makedirs, remove, stat
 from os.path import exists
 from pathlib import Path
+
 from appdirs import user_data_dir
-from cachetools import cached, TTLCache
+from cachetools import TTLCache, cached
 from loguru import logger
 from rich.console import Console
 
-
 from monthify.track import Track
 from monthify.utils import (
-    sort_chronologically,
-    normalize_text,
     conditional_decorator,
+    normalize_text,
+    sort_chronologically,
 )
 
 appname = "Monthify"
@@ -87,7 +87,7 @@ class Monthify:
             self.last_run = ""
 
         self.playlist_names_with_id = []
-        self.name = f"""
+        self.name = """
         [green]
         ___  ___            _   _     _  __       
         |  \/  |           | | | |   (_)/ _|      
