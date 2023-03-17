@@ -3,7 +3,7 @@
 A python script that sorts the user's liked Spotify tracks into playlists by the month they were liked.
 Inspired by an [IFTTT applet](https://ifttt.com/applets/rC5QtGu6-add-saved-songs-to-a-monthly-playlist) by user [t00r](https://ifttt.com/p/t00r)
 
-## Required
+## Requirements
 
 - Python 3.10+
 - A spotify account
@@ -65,7 +65,7 @@ CLIENT_ID="..."
 
 ```
 git clone https://github.com/madstone0-0/monthify.git
-cp monthify
+cd monthify
 poetry install
 poetry build
 ```
