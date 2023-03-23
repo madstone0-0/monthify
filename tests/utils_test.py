@@ -2,8 +2,8 @@ import random
 
 from pytest import mark
 
-from ..utils import extract_month_and_year, normalize_text, sort_chronologically
-from .test_data import (
+from monthify.utils import extract_month_and_year, normalize_text, sort_chronologically
+from tests.test_data import (
     date_data,
     playlist_data,
     text_data,
