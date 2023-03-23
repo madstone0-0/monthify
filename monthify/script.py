@@ -10,6 +10,7 @@ from cachetools import TTLCache, cached
 from loguru import logger
 from rich.console import Console
 
+from monthify import ERROR, SUCCESS
 from monthify.track import Track
 from monthify.utils import (
     conditional_decorator,
@@ -22,6 +23,7 @@ appauthor = "madstone0-0"
 appdata_location = user_data_dir(appname, appauthor)
 
 MAX_RESULTS = 10000
+CACHE_LIFETIME = 30
 
 makedirs(f"{appdata_location}/logs", exist_ok=True)
 logger.add(
@@ -64,7 +66,7 @@ class Monthify:
             if (
                 datetime.now()
                 - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
-            ).days >= 30:
+            ).days >= CACHE_LIFETIME:
                 remove(existing_playlists_file)
                 self.already_created_playlists = []
                 self.already_created_playlists_exists = False
@@ -88,7 +90,6 @@ class Monthify:
 
         self.playlist_names_with_id = []
         self.name = """
-        [green]
         ___  ___            _   _     _  __       
         |  \/  |           | | | |   (_)/ _|      
         | .  . | ___  _ __ | |_| |__  _| |_ _   _ 
@@ -98,20 +99,17 @@ class Monthify:
                                              __/ |
                                             |___/ 
         written by [link=https://github.com/madstone0-0]madstone0-0[/link]
-        [/green]
         """
 
     def logout(self):
         if self.LOGOUT is True:
             try:
                 remove(f"{appdata_location}/.cache")
-                console.print(
-                    "Successfully logged out of saved account", style="bold green"
-                )
+                console.print("Successfully logged out of saved account", style=SUCCESS)
                 logger.info("Successfully deleted .cache file, user logged out")
                 sys.exit(0)
             except FileNotFoundError:
-                console.print("Not logged into any account", style="bold red")
+                console.print("Not logged into any account", style=ERROR)
                 logger.error("Cache file doesn't exist")
                 sys.exit(0)
 
@@ -121,7 +119,7 @@ class Monthify:
         Displays project name and current username
         """
         logger.info("Starting script execution")
-        console.print(self.name)
+        console.print(self.name, style="green")
         console.print(f"Username: [cyan]{self.current_display_name}[/cyan]")
 
     def update_last_run(self):

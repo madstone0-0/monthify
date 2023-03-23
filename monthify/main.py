@@ -1,13 +1,14 @@
 #! /usr/bin/python3
-
 import argparse
 import sys
-
-import toml
 from importlib.metadata import version
 
+import toml
+from appdirs import user_config_dir, user_data_dir
+from requests.exceptions import ConnectionError
 from rich.console import Console
-from appdirs import user_data_dir, user_config_dir
+
+from monthify import ERROR
 from monthify.auth import Auth
 from monthify.script import Monthify
 
@@ -38,7 +39,7 @@ try:
 except FileNotFoundError:
     using_config_file = False
 except toml.TomlDecodeError:
-    console.print("Invalid config document")
+    console.print("Invalid config document", style=ERROR)
     sys.exit(1)
 
 
@@ -114,7 +115,9 @@ LOGOUT = args.logout
 VERSION = args.version
 
 if not CLIENT_ID or not CLIENT_SECRET:
-    console.print("Client id and secret needed to connect to spotify's servers")
+    console.print(
+        "Client id and secret needed to connect to spotify's servers", style=ERROR
+    )
     sys.exit(1)
 
 
@@ -157,6 +160,12 @@ def run():
         controller.update_last_run()
     except KeyboardInterrupt:
         console.print("Exiting...")
+    except ConnectionError:
+        console.print(
+            "Cannot connect to Spotify servers, please check your internet connection and try again",
+            style=ERROR,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
