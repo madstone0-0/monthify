@@ -5,7 +5,7 @@ from importlib.metadata import version
 
 import toml
 from appdirs import user_config_dir, user_data_dir
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, ReadTimeout
 from rich.console import Console
 
 from monthify import ERROR
@@ -160,7 +160,7 @@ def run():
         controller.update_last_run()
     except KeyboardInterrupt:
         console.print("Exiting...")
-    except ConnectionError:
+    except ConnectionError or ReadTimeout:
         console.print(
             "Cannot connect to Spotify servers, please check your internet connection and try again",
             style=ERROR,
