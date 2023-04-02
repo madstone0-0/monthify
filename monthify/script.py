@@ -56,7 +56,7 @@ class Monthify:
         self.has_created_playlists = False
         self.current_username = ""
         self.current_display_name = ""
-        self.track_list = []
+        self.track_list = ()
         self.playlist_names = []
         self.already_created_playlists_exists = False
         if (
@@ -221,7 +221,7 @@ class Monthify:
         with console.status("Retrieving user saved tracks"):
             tracks = self.get_user_saved_tracks()
             logger.info("Retrieving saved track info")
-            self.track_list = [
+            self.track_list = tuple(
                 Track(
                     title=item["track"]["name"],
                     artist=item["track"]["artists"][0]["name"],
@@ -229,7 +229,7 @@ class Monthify:
                     uri=item["track"]["uri"],
                 )
                 for item in tracks
-            ]
+            )
 
     def get_playlist_names_names(self):
         """
@@ -350,7 +350,7 @@ class Monthify:
         playlist_items = self.get_playlist_items(playlist_id)
         to_be_added_uris, playlist_uris = [], []
 
-        playlist_uris = [item["track"]["uri"] for item in playlist_items]
+        playlist_uris = tuple(item["track"]["uri"] for item in playlist_items)
 
         for track in reversed(tracks):
             if track.uri in playlist_uris:
@@ -382,10 +382,10 @@ class Monthify:
                 tracks=(" ".join(to_be_added_uris)),
                 playlist=playlist_id,
             )
-            to_be_added_uris_chunks = [
+            to_be_added_uris_chunks = tuple(
                 to_be_added_uris[x : x + 100]
                 for x in range(0, len(to_be_added_uris), 100)
-            ]
+            )
             for chunk in to_be_added_uris_chunks:
                 self.sp.playlist_add_items(playlist_id=playlist_id, items=chunk)
             console.print("\n")
@@ -431,11 +431,11 @@ class Monthify:
                     f"Sorting into playlist [link={playlist_url}]{playlist_name}[/link]"
                 )
                 console.print("\t\n")
-                tracks = [
+                tracks = tuple(
                     track
                     for track in self.track_list
                     if track.track_month == (month, year)
-                ]
+                )
                 if not tracks:
                     break
                 else:
