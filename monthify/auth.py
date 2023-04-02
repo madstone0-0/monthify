@@ -10,11 +10,11 @@ class Auth:
         self.client_secret = CLIENT_SECRET
         self.client_id = CLIENT_ID
         self.redirect_uri = "https://open.spotify.com/"
-        self.scopes = [
+        self.scopes = (
             "user-library-read",
             "playlist-read-private",
             "playlist-modify-private",
-        ]
+        )
         self.location = LOCATION
 
     def spotipy_init(self, scopes):
