@@ -160,7 +160,7 @@ def run():
         controller.update_last_run()
     except KeyboardInterrupt:
         console.print("Exiting...")
-    except ConnectionError or ReadTimeout:
+    except (ConnectionError, ReadTimeout):
         console.print(
             "Cannot connect to Spotify servers, please check your internet connection and try again",
             style=ERROR,
