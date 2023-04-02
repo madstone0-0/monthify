@@ -267,7 +267,7 @@ class Monthify:
             item[1]["name"] for item in enumerate(self.get_user_saved_playlists())
         ]
         monthly_ran = False
-        if self.last_run == "":
+        if not self.last_run:
             last_run = datetime.now().strftime(last_run_format)
         else:
             last_run = self.last_run
