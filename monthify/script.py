@@ -292,7 +292,7 @@ class Monthify:
             last_run = self.last_run
 
         def playlist_loop():
-            for month, year in self.playlist_names:
+            for month, year in reversed(self.playlist_names):
                 playlist_name = str(month + " '" + year[2:])
                 if (
                     playlist_name in self.already_created_playlists
