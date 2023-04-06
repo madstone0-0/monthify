@@ -132,7 +132,7 @@ class Monthify:
         with open(last_run_file, "w", encoding="utf_8") as f:
             f.write(self.last_run)
 
-    def getResults(self, result):
+    def get_results(self, result):
         """
         Retrieves all results from a spotify api call
         """
@@ -158,7 +158,7 @@ class Monthify:
         Retrieves the current user's saved spotify tracks
         """
         logger.info("Starting user saved tracks fetch")
-        results = self.getResults(self.sp.current_user_saved_tracks(limit=50))
+        results = self.get_results(self.sp.current_user_saved_tracks(limit=50))
         logger.info("Ending user saved tracks fetch")
         return results
 
@@ -168,7 +168,7 @@ class Monthify:
         Retrieves the current user's created or liked spotify playlists
         """
         logger.info("Starting user saved playlists fetch")
-        results = self.getResults(self.sp.current_user_playlists(limit=50))
+        results = self.get_results(self.sp.current_user_playlists(limit=50))
         logger.info("Ending user saved playlists fetch")
         return results
 
@@ -177,7 +177,7 @@ class Monthify:
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
         logger.info(f"Starting playlist item fetch\n id: {playlist_id}", playlist_id)
-        results = self.getResults(
+        results = self.get_results(
             self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20)
         )
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
