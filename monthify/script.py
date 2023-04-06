@@ -56,7 +56,6 @@ class Monthify:
         self.has_created_playlists = False
         self.current_username = ""
         self.current_display_name = ""
-        self.track_list = ()
         self.playlist_names = []
         self.already_created_playlists_exists = False
         if (
@@ -133,7 +132,10 @@ class Monthify:
         with open(last_run_file, "w", encoding="utf_8") as f:
             f.write(self.last_run)
 
-    def getResults(self, result):
+    def get_results(self, result):
+        """
+        Retrieves all results from a spotify api call
+        """
         results = []
         while result:
             results += [*result["items"]]
@@ -145,6 +147,9 @@ class Monthify:
 
     @cached(user_cache)
     def get_username(self):
+        """
+        Retrieves the current user's spotify information
+        """
         return self.sp.current_user()
 
     @cached(saved_tracks_cache)
@@ -153,7 +158,7 @@ class Monthify:
         Retrieves the current user's saved spotify tracks
         """
         logger.info("Starting user saved tracks fetch")
-        results = self.getResults(self.sp.current_user_saved_tracks(limit=50))
+        results = self.get_results(self.sp.current_user_saved_tracks(limit=50))
         logger.info("Ending user saved tracks fetch")
         return results
 
@@ -163,7 +168,7 @@ class Monthify:
         Retrieves the current user's created or liked spotify playlists
         """
         logger.info("Starting user saved playlists fetch")
-        results = self.getResults(self.sp.current_user_playlists(limit=50))
+        results = self.get_results(self.sp.current_user_playlists(limit=50))
         logger.info("Ending user saved playlists fetch")
         return results
 
@@ -172,7 +177,7 @@ class Monthify:
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
         logger.info(f"Starting playlist item fetch\n id: {playlist_id}", playlist_id)
-        results = self.getResults(
+        results = self.get_results(
             self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20)
         )
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
@@ -216,27 +221,36 @@ class Monthify:
 
     def get_saved_track_info(self):
         """
-        Collates the user's saved tracks and adds them to a list as a Track type
+        Calls the get_saved_track_gen function at program's start to cache the user's saved tracks
         """
         with console.status("Retrieving user saved tracks"):
-            tracks = self.get_user_saved_tracks()
-            logger.info("Retrieving saved track info")
-            self.track_list = tuple(
-                Track(
-                    title=item["track"]["name"],
-                    artist=item["track"]["artists"][0]["name"],
-                    added_at=item["added_at"],
-                    uri=item["track"]["uri"],
-                )
-                for item in tracks
+            self.get_saved_track_gen()
+
+    def get_saved_track_gen(self):
+        """
+        Collates the user's saved tracks and adds them to a list as a Track type
+        """
+        tracks = self.get_user_saved_tracks()
+        logger.info("Retrieving saved track info")
+        track_list = (
+            Track(
+                title=item["track"]["name"],
+                artist=item["track"]["artists"][0]["name"],
+                added_at=item["added_at"],
+                uri=item["track"]["uri"],
             )
+            for item in tracks
+        )
+        return track_list
 
     def get_playlist_names_names(self):
         """
         Generates month playlist names using the added_at attribute of the Track type
         """
         logger.info("Generating playlist names")
-        self.playlist_names = [track.track_month for track in self.track_list]
+        self.playlist_names = [
+            track.track_month for track in self.get_saved_track_gen()
+        ]
         unsorted_playlist_names = [*set(self.playlist_names)]
         self.playlist_names = sort_chronologically(unsorted_playlist_names)
         logger.info("Removing duplicate playlist names")
@@ -278,7 +292,7 @@ class Monthify:
             last_run = self.last_run
 
         def playlist_loop():
-            for month, year in self.playlist_names:
+            for month, year in reversed(self.playlist_names):
                 playlist_name = str(month + " '" + year[2:])
                 if (
                     playlist_name in self.already_created_playlists
@@ -398,13 +412,15 @@ class Monthify:
         """
         log = logger.bind(
             playlist_names=self.playlist_names_with_id,
-            tracks=[track.title for track in self.track_list],
+            tracks=[track.title for track in self.get_saved_track_gen()],
         )
         log.info("Started sort")
         console.print("\nBeginning playlist sort")
         try:
             if len(self.playlist_names) != len(self.playlist_names_with_id):
-                raise Exception
+                raise RuntimeError(
+                    "playlist_names and playlist_names_with_id are not the same length"
+                )
         except RuntimeError as error:
             log.error(
                 "playlist_names and playlist_names_with_id are not the same length",
@@ -412,9 +428,10 @@ class Monthify:
                 playlist_names_with_id_length=self.playlist_names_with_id.__len__(),
                 error=error,
             )
-            raise console.print(
-                "The playlist_names list and the playlist_names_with_id list are not the same length "
-                f"something has gone wrong error={error}"
+            console.print(
+                f"Something has gone wrong error='{error}',"
+                " please run the program again with the --create-playlists flag",
+                style=ERROR,
             )
             sys.exit(1)
 
@@ -433,7 +450,7 @@ class Monthify:
                 console.print("\t\n")
                 tracks = tuple(
                     track
-                    for track in self.track_list
+                    for track in self.get_saved_track_gen()
                     if track.track_month == (month, year)
                 )
                 if not tracks:
@@ -451,7 +468,7 @@ class Monthify:
         elif self.total_tracks_added == 1:
             count = "One track added"
         elif self.total_tracks_added > 1:
-            count = f"Total tracks added: {self.total_tracks_added}"
+            count = f"Total tracks added to playlists: {self.total_tracks_added}"
 
         console.print(count)
         console.print("Finished playlist sort")
