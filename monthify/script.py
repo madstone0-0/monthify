@@ -418,7 +418,9 @@ class Monthify:
         console.print("\nBeginning playlist sort")
         try:
             if len(self.playlist_names) != len(self.playlist_names_with_id):
-                raise Exception
+                raise RuntimeError(
+                    "playlist_names and playlist_names_with_id are not the same length"
+                )
         except RuntimeError as error:
             log.error(
                 "playlist_names and playlist_names_with_id are not the same length",
@@ -426,9 +428,10 @@ class Monthify:
                 playlist_names_with_id_length=self.playlist_names_with_id.__len__(),
                 error=error,
             )
-            raise console.print(
-                "The playlist_names list and the playlist_names_with_id list are not the same length "
-                f"something has gone wrong error={error}"
+            console.print(
+                f"Something has gone wrong error='{error}',"
+                " please run the program again with the --create-playlists flag",
+                style=ERROR,
             )
             sys.exit(1)
 
@@ -465,7 +468,7 @@ class Monthify:
         elif self.total_tracks_added == 1:
             count = "One track added"
         elif self.total_tracks_added > 1:
-            count = f"Total tracks added: {self.total_tracks_added}"
+            count = f"Total tracks added to playlists: {self.total_tracks_added}"
 
         console.print(count)
         console.print("Finished playlist sort")
