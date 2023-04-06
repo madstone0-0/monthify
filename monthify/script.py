@@ -134,6 +134,9 @@ class Monthify:
             f.write(self.last_run)
 
     def getResults(self, result):
+        """
+        Retrieves all results from a spotify api call
+        """
         results = []
         while result:
             results += [*result["items"]]
@@ -145,6 +148,9 @@ class Monthify:
 
     @cached(user_cache)
     def get_username(self):
+        """
+        Retrieves the current user's spotify information
+        """
         return self.sp.current_user()
 
     @cached(saved_tracks_cache)
