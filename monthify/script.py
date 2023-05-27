@@ -1,5 +1,6 @@
 # Script
 import sys
+from collections.abc import Iterable
 from datetime import datetime
 from os import makedirs, remove, stat
 from os.path import exists
@@ -11,6 +12,7 @@ from loguru import logger
 from rich.console import Console
 
 from monthify import ERROR, SUCCESS
+from monthify.auth import Auth
 from monthify.track import Track
 from monthify.utils import (
     conditional_decorator,
@@ -38,15 +40,21 @@ console = Console()
 existing_playlists_file = f"{appdata_location}/existing_playlists_file.dat"
 last_run_file = f"{appdata_location}/last_run.txt"
 last_run_format = "%Y-%m-%d %H:%M:%S"
-saved_tracks_cache = TTLCache(maxsize=1000, ttl=86400)
-saved_playlists_cache = TTLCache(maxsize=1000, ttl=86400)
-user_cache = TTLCache(maxsize=1, ttl=86400)
+saved_tracks_cache: TTLCache = TTLCache(maxsize=1000, ttl=86400)
+saved_playlists_cache: TTLCache = TTLCache(maxsize=1000, ttl=86400)
+user_cache: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 
 class Monthify:
     total_tracks_added = 0
 
-    def __init__(self, auth, SKIP_PLAYLIST_CREATION, LOGOUT, CREATE_PLAYLIST):
+    def __init__(
+        self,
+        auth: Auth,
+        SKIP_PLAYLIST_CREATION: bool,
+        LOGOUT: bool,
+        CREATE_PLAYLIST: bool,
+    ):
         self.LOGOUT = LOGOUT
         self.logout()
         authentication = auth
@@ -56,7 +64,7 @@ class Monthify:
         self.has_created_playlists = False
         self.current_username = ""
         self.current_display_name = ""
-        self.playlist_names = []
+        self.playlist_names: Iterable[str] = []
         self.already_created_playlists_exists = False
         if (
             exists(existing_playlists_file)
@@ -77,7 +85,7 @@ class Monthify:
             self.already_created_playlists = []
             self.already_created_playlists_exists = False
 
-        self.already_created_playlists_inter = []
+        self.already_created_playlists_inter: Iterable[str] = []
         if exists(last_run_file):
             if stat(last_run_file).st_size != 0:
                 with open(last_run_file, "r", encoding="utf_8") as f:
@@ -87,7 +95,7 @@ class Monthify:
         else:
             self.last_run = ""
 
-        self.playlist_names_with_id = []
+        self.playlist_names_with_id: Iterable[str] = []
         self.name = """
         ___  ___            _   _     _  __       
         |  \/  |           | | | |   (_)/ _|      
@@ -303,7 +311,7 @@ class Monthify:
                     name = month + " '" + year[2:]
                     self.create_playlist(name)
 
-        def skip(status: bool):
+        def skip(status: bool) -> None:
             if status is True:
                 console.print("Playlist generation skipped")
                 logger.info("Playlist generation skipped")
@@ -352,7 +360,7 @@ class Monthify:
             with open(existing_playlists_file, "w", encoding="utf_8") as f:
                 f.write("\n".join(self.already_created_playlists))
 
-    def add_to_playlist(self, tracks: list[Track], playlist_id):
+    def add_to_playlist(self, tracks: list[Track], playlist_id: str) -> None:
         """
         Add a list of tracks to a specified playlist using playlist id
         """
@@ -362,7 +370,8 @@ class Monthify:
             playlist=str(playlist_id),
         )
         playlist_items = self.get_playlist_items(playlist_id)
-        to_be_added_uris, playlist_uris = [], []
+        to_be_added_uris: list[str] = []
+        playlist_uris: Iterable[str] = []
 
         playlist_uris = tuple(item["track"]["uri"] for item in playlist_items)
 
