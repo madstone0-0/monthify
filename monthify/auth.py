@@ -1,4 +1,6 @@
 # Authentication manager
+from collections.abc import Iterable
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
@@ -6,7 +8,7 @@ MAX_TRIES = 5
 
 
 class Auth:
-    def __init__(self, CLIENT_ID, CLIENT_SECRET, LOCATION):
+    def __init__(self, CLIENT_ID: str, CLIENT_SECRET: str, LOCATION: str):
         self.client_secret = CLIENT_SECRET
         self.client_id = CLIENT_ID
         self.redirect_uri = "https://open.spotify.com/"
@@ -17,7 +19,7 @@ class Auth:
         )
         self.location = LOCATION
 
-    def spotipy_init(self, scopes):
+    def spotipy_init(self, scopes: Iterable[str]) -> spotipy.Spotify:
         return spotipy.Spotify(
             retries=MAX_TRIES,
             requests_timeout=10,
