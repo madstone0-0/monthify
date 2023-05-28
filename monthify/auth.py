@@ -37,6 +37,3 @@ class Auth:
                 cache_path=f"{self.location}/.cache",
             ),
         )
-
-    # def get_spotipy(self) -> spotipy.Spotify:
-    #     return self.spotipy_init(self.scopes)

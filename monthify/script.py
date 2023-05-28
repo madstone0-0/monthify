@@ -7,12 +7,10 @@ from os.path import exists
 from pathlib import Path
 from typing import List, Tuple
 
-from appdirs import user_data_dir
 from cachetools import TTLCache, cached
 from loguru import logger
-from rich.console import Console
 
-from monthify import ERROR, SUCCESS
+from monthify import ERROR, SUCCESS, appdata_location, console
 from monthify.auth import Auth
 from monthify.track import Track
 from monthify.utils import (
@@ -20,10 +18,6 @@ from monthify.utils import (
     normalize_text,
     sort_chronologically,
 )
-
-appname = "Monthify"
-appauthor = "madstone0-0"
-appdata_location = user_data_dir(appname, appauthor)
 
 MAX_RESULTS = 10000
 CACHE_LIFETIME = 30
@@ -37,7 +31,6 @@ logger.add(
 )
 logger.remove()
 logger.add(f"{appdata_location}/logs/monthify.log", rotation="00:00", compression="zip")
-console = Console()
 existing_playlists_file = f"{appdata_location}/existing_playlists_file.dat"
 last_run_file = f"{appdata_location}/last_run.txt"
 last_run_format = "%Y-%m-%d %H:%M:%S"
