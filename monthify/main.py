@@ -132,6 +132,12 @@ def run():
                 CLIENT_ID=CLIENT_ID,
                 CLIENT_SECRET=CLIENT_SECRET,
                 LOCATION=appdata_location,
+                REDIRECT="https://open.spotify.com/",
+                SCOPES=(
+                    "user-library-read",
+                    "playlist-read-private",
+                    "playlist-modify-private",
+                ),
             ),
             SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
             LOGOUT=LOGOUT,
