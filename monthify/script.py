@@ -5,6 +5,7 @@ from datetime import datetime
 from os import makedirs, remove, stat
 from os.path import exists
 from pathlib import Path
+from typing import List, Tuple
 
 from appdirs import user_data_dir
 from cachetools import TTLCache, cached
@@ -62,9 +63,9 @@ class Monthify:
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
         self.has_created_playlists = False
-        self.current_username = ""
-        self.current_display_name = ""
-        self.playlist_names: Iterable[str] = []
+        self.current_username: str
+        self.current_display_name: str
+        self.playlist_names: List[Tuple[str, str]]
         self.already_created_playlists_exists = False
         if (
             exists(existing_playlists_file)
@@ -256,9 +257,9 @@ class Monthify:
         Generates month playlist names using the added_at attribute of the Track type
         """
         logger.info("Generating playlist names")
-        self.playlist_names = [
+        self.playlist_names = tuple(
             track.track_month for track in self.get_saved_track_gen()
-        ]
+        )
         unsorted_playlist_names = [*set(self.playlist_names)]
         self.playlist_names = sort_chronologically(unsorted_playlist_names)
         logger.info("Removing duplicate playlist names")
@@ -294,22 +295,11 @@ class Monthify:
             ]
 
         monthly_ran = False
+        last_run = None
         if not self.last_run:
             last_run = datetime.now().strftime(last_run_format)
         else:
             last_run = self.last_run
-
-        def playlist_loop():
-            for month, year in reversed(self.playlist_names):
-                playlist_name = str(month + " '" + year[2:])
-                if (
-                    playlist_name in self.already_created_playlists
-                    and playlist_name in spotify_playlists
-                ):
-                    console.print(f"{month} '{year[2:]} playlist already exists")
-                else:
-                    name = month + " '" + year[2:]
-                    self.create_playlist(name)
 
         def skip(status: bool) -> None:
             if status is True:
@@ -317,21 +307,27 @@ class Monthify:
                 logger.info("Playlist generation skipped")
             else:
                 logger.info("Playlist generation starting")
-                playlist_loop()
+                for month, year in reversed(self.playlist_names):
+                    playlist_name = str(month + " '" + year[2:])
+                    if (
+                        playlist_name in self.already_created_playlists
+                        and playlist_name in spotify_playlists
+                    ):
+                        console.print(f"{month} '{year[2:]} playlist already exists")
+                    else:
+                        name = month + " '" + year[2:]
+                        self.create_playlist(name)
 
-        if (
-            datetime.strptime(last_run, last_run_format).strftime("%B")
-            != datetime.now().strftime("%B")
-        ) and self.already_created_playlists_exists is False:
+        has_month_passed = datetime.strptime(last_run, last_run_format).strftime(
+            "%B"
+        ) != datetime.now().strftime("%B")
+        if has_month_passed and self.already_created_playlists_exists is False:
+            skip(False)
+        elif has_month_passed is False and self.already_created_playlists_exists:
             monthly_ran = True
-            playlist_loop()
 
         if self.CREATE_PLAYLIST is False:
-            if (
-                self.SKIP_PLAYLIST_CREATION is False
-                and monthly_ran is False
-                or self.already_created_playlists_exists is False
-            ):
+            if self.SKIP_PLAYLIST_CREATION is False and monthly_ran is False:
                 console.print(
                     "Playlist generation has already occurred this month, do you still want to generate "
                     "playlists? (yes/no)"
@@ -342,8 +338,17 @@ class Monthify:
                     skip(True)
                 else:
                     skip(False)
+
+            elif self.already_created_playlists_exists is False:
+                console.print(
+                    "Somehow the playlists do not exist. Generating Playlists..."
+                )
+                logger.info("Requesting playlist creation")
+                skip(False)
+
             else:
                 skip(True)
+
         else:
             skip(False)
 
