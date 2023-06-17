@@ -4,33 +4,36 @@ from collections.abc import Iterable
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
-MAX_TRIES = 5
-
 
 class Auth:
-    def __init__(self, CLIENT_ID: str, CLIENT_SECRET: str, LOCATION: str):
+    def __init__(
+        self,
+        CLIENT_ID: str,
+        CLIENT_SECRET: str,
+        LOCATION: str,
+        SCOPES: Iterable[str],
+        REDIRECT: str,
+        MAX_TRIES: int = 5,
+        TIMEOUT: int = 10,
+    ):
         self.client_secret = CLIENT_SECRET
         self.client_id = CLIENT_ID
-        self.redirect_uri = "https://open.spotify.com/"
-        self.scopes = (
-            "user-library-read",
-            "playlist-read-private",
-            "playlist-modify-private",
-        )
+        self.redirect_uri = REDIRECT
+        self.scopes = SCOPES
         self.location = LOCATION
+        self.retries = MAX_TRIES
+        self.timeout = TIMEOUT
 
-    def spotipy_init(self, scopes: Iterable[str]) -> spotipy.Spotify:
+    def get_spotipy(self) -> spotipy.Spotify:
         return spotipy.Spotify(
-            retries=MAX_TRIES,
-            requests_timeout=10,
+            retries=self.retries,
+            requests_timeout=self.timeout,
             auth_manager=SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
                 redirect_uri=self.redirect_uri,
-                scope=[str(scope) for scope in scopes],
+                # scope=[str(scope) for scope in scopes],
+                scope=self.scopes,
                 cache_path=f"{self.location}/.cache",
             ),
         )
-
-    def get_spotipy(self) -> spotipy.Spotify:
-        return self.spotipy_init(self.scopes)

@@ -15,7 +15,7 @@ class Track:
     artist: str
     added_at: str
     uri: str
-    track_month: tuple[str] = field(init=False, repr=False)
+    track_month: tuple[str, str] = field(init=False, repr=False)
 
     def __post_init__(self):
         self.track_month = extract_month_and_year(self.added_at)
