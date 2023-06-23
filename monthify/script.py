@@ -20,9 +20,7 @@ MAX_RESULTS = 10000
 CACHE_LIFETIME = 30
 
 makedirs(f"{appdata_location}/logs", exist_ok=True)
-logger.add(
-    sys.stderr, format="{time} {level} {message}", filter="monthify", level="INFO"
-)
+logger.add(sys.stderr, format="{time} {level} {message}", filter="monthify", level="INFO")
 logger.remove()
 logger.add(f"{appdata_location}/logs/monthify.log", rotation="00:00", compression="zip")
 existing_playlists_file = f"{appdata_location}/existing_playlists_file.dat"
@@ -54,13 +52,9 @@ class Monthify:
         self.current_display_name: str
         self.playlist_names: List[Tuple[str, str]]
         self.already_created_playlists_exists = False
-        if (
-            exists(existing_playlists_file)
-            and stat(existing_playlists_file).st_size != 0
-        ):
+        if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
             if (
-                datetime.now()
-                - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
+                datetime.now() - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
             ).days >= CACHE_LIFETIME:
                 remove(existing_playlists_file)
                 self.already_created_playlists = []
@@ -113,6 +107,7 @@ class Monthify:
         Staring function
         Displays project name and current username
         """
+
         logger.info("Starting script execution")
         console.print(self.name, style="green")
         with console.status("Retrieving user information"):
@@ -124,6 +119,7 @@ class Monthify:
         """
         Updates last run time to current time
         """
+
         self.last_run = datetime.now().strftime(last_run_format)
         with open(last_run_file, "w", encoding="utf_8") as f:
             f.write(self.last_run)
@@ -132,6 +128,7 @@ class Monthify:
         """
         Retrieves all results from a spotify api call
         """
+
         results = []
         while result:
             results += [*result["items"]]
@@ -146,6 +143,7 @@ class Monthify:
         """
         Retrieves the current user's spotify information
         """
+
         return self.sp.current_user()
 
     @cached(saved_tracks_cache)
@@ -153,6 +151,7 @@ class Monthify:
         """
         Retrieves the current user's saved spotify tracks
         """
+
         logger.info("Starting user saved tracks fetch")
         results = self.get_results(self.sp.current_user_saved_tracks(limit=50))
         logger.info("Ending user saved tracks fetch")
@@ -163,6 +162,7 @@ class Monthify:
         """
         Retrieves the current user's created or liked spotify playlists
         """
+
         logger.info("Starting user saved playlists fetch")
         results = self.get_results(self.sp.current_user_playlists(limit=50))
         logger.info("Ending user saved playlists fetch")
@@ -172,10 +172,9 @@ class Monthify:
         """
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
         """
+
         logger.info(f"Starting playlist item fetch\n id: {playlist_id}", playlist_id)
-        results = self.get_results(
-            self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20)
-        )
+        results = self.get_results(self.sp.playlist_items(playlist_id=playlist_id, fields=None, limit=20))
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
         return results
 
@@ -184,6 +183,7 @@ class Monthify:
         Creates playlist with name var checking if the playlist already exists in the user's library,
         if it does the user is informed
         """
+
         sp = self.sp
         playlists = self.get_user_saved_playlists()
         already_created_playlists = []
@@ -219,6 +219,7 @@ class Monthify:
         """
         Calls the get_saved_track_gen function at program's start to cache the user's saved tracks
         """
+
         with console.status("Retrieving user saved tracks"):
             self.get_saved_track_gen()
 
@@ -226,6 +227,7 @@ class Monthify:
         """
         Collates the user's saved tracks and adds them to a list as a Track type
         """
+
         tracks = self.get_user_saved_tracks()
         logger.info("Retrieving saved track info")
         track_list = (
@@ -243,10 +245,9 @@ class Monthify:
         """
         Generates month playlist names using the added_at attribute of the Track type
         """
+
         logger.info("Generating playlist names")
-        self.playlist_names = tuple(
-            track.track_month for track in self.get_saved_track_gen()
-        )
+        self.playlist_names = tuple(track.track_month for track in self.get_saved_track_gen())
         unsorted_playlist_names = [*set(self.playlist_names)]
         self.playlist_names = sort_chronologically(unsorted_playlist_names)
         logger.info("Removing duplicate playlist names")
@@ -256,14 +257,13 @@ class Monthify:
         """
         Retrieves playlist ids of already created month playlists
         """
+
         logger.info("Retrieving playlist ids")
         with console.status("Retrieving relevant playlist information"):
             playlists = self.get_user_saved_playlists()
             for month, year in self.playlist_names:
                 for item in playlists:
-                    if normalize_text((month + " '" + year[2:])) == normalize_text(
-                        item["name"]
-                    ):
+                    if normalize_text((month + " '" + year[2:])) == normalize_text(item["name"]):
                         self.playlist_names_with_id.append((month, year, item["id"]))
                         logger.info(
                             "Playlist name: {name} id: {id}",
@@ -281,10 +281,7 @@ class Monthify:
                 RuntimeError("Playlists have not passed been passed to skip function")
             for month, year in reversed(self.playlist_names):
                 playlist_name = str(month + " '" + year[2:])
-                if (
-                    playlist_name in self.already_created_playlists
-                    and playlist_name in playlists
-                ):
+                if playlist_name in self.already_created_playlists and playlist_name in playlists:
                     console.print(f"{month} '{year[2:]} playlist already exists")
                 else:
                     name = month + " '" + year[2:]
@@ -294,22 +291,15 @@ class Monthify:
         """
         Creates playlists in user's library based on generated playlist names
         """
+
         logger.info("Creating playlists")
         with console.status("Generating playlists"):
-            spotify_playlists = [
-                item["name"] for item in self.get_user_saved_playlists()
-            ]
+            spotify_playlists = [item["name"] for item in self.get_user_saved_playlists()]
 
         monthly_ran = False
-        last_run = (
-            datetime.now().strftime(last_run_format)
-            if not self.last_run
-            else self.last_run
-        )
+        last_run = datetime.now().strftime(last_run_format) if not self.last_run else self.last_run
 
-        has_month_passed = datetime.strptime(last_run, last_run_format).strftime(
-            "%B"
-        ) != datetime.now().strftime("%B")
+        has_month_passed = datetime.strptime(last_run, last_run_format).strftime("%B") != datetime.now().strftime("%B")
         if has_month_passed and self.already_created_playlists_exists is False:
             self.skip(False, spotify_playlists)
         elif has_month_passed is False and self.already_created_playlists_exists:
@@ -329,9 +319,7 @@ class Monthify:
                     self.skip(False, spotify_playlists)
 
             elif self.already_created_playlists_exists is False:
-                console.print(
-                    "Somehow the playlists do not exist. Generating Playlists..."
-                )
+                console.print("Somehow the playlists do not exist. Generating Playlists...")
                 logger.info("Requesting playlist creation")
                 self.skip(False, spotify_playlists)
 
@@ -346,9 +334,7 @@ class Monthify:
                 *self.already_created_playlists,
                 *self.already_created_playlists_inter,
             ]
-            self.already_created_playlists = list(
-                dict.fromkeys(self.already_created_playlists)
-            )
+            self.already_created_playlists = list(dict.fromkeys(self.already_created_playlists))
 
         if self.already_created_playlists:
             with open(existing_playlists_file, "w", encoding="utf_8") as f:
@@ -358,6 +344,7 @@ class Monthify:
         """
         Add a list of tracks to a specified playlist using playlist id
         """
+
         logger.info(
             "Attempting to add tracks to playlist: {playlist}\ntracks: {tracks} ",
             tracks=tracks,
@@ -366,9 +353,7 @@ class Monthify:
         playlist_items = self.get_playlist_items(playlist_id)
         to_be_added_uris: list[str] = []
 
-        playlist_uris: Iterable[str] = tuple(
-            item["track"]["uri"] for item in playlist_items
-        )
+        playlist_uris: Iterable[str] = tuple(item["track"]["uri"] for item in playlist_items)
 
         for track in reversed(tracks):
             if track.uri in playlist_uris:
@@ -379,9 +364,7 @@ class Monthify:
                     " already exists in the playlist"
                 )
             else:
-                logger.info(
-                    f"Track: {track} will be added to playlist: {str(playlist_id)}"
-                )
+                logger.info(f"Track: {track} will be added to playlist: {str(playlist_id)}")
                 track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
                 console.print(
                     f"[bold green][+][/bold green]\t[link={track_url}][bold green]{track.title} by {track.artist}"
@@ -389,10 +372,9 @@ class Monthify:
                     " will be added to the playlist "
                 )
                 to_be_added_uris.append(track.uri)
+
         if not to_be_added_uris:
-            logger.info(
-                "No tracks to add to playlist: {playlist}", playlist=playlist_id
-            )
+            logger.info("No tracks to add to playlist: {playlist}", playlist=playlist_id)
             console.print("\t\n")
         else:
             logger.info(
@@ -400,31 +382,30 @@ class Monthify:
                 tracks=(" ".join(to_be_added_uris)),
                 playlist=playlist_id,
             )
-            to_be_added_uris_chunks = tuple(
-                to_be_added_uris[x : x + 100]
-                for x in range(0, len(to_be_added_uris), 100)
-            )
+            to_be_added_uris_chunks = tuple(to_be_added_uris[x : x + 100] for x in range(0, len(to_be_added_uris), 100))
             for chunk in to_be_added_uris_chunks:
                 self.sp.playlist_add_items(playlist_id=playlist_id, items=chunk)
             console.print("\n")
             self.total_tracks_added += len(to_be_added_uris)
+
         logger.info("Ended track addition")
 
     def sort_tracks_by_month(self):
         """
         Sorts saved tracks into appropriate monthly playlist
         """
+
         log = logger.bind(
             playlist_names=self.playlist_names_with_id,
             tracks=[track.title for track in self.get_saved_track_gen()],
         )
+
         log.info("Started sort")
+
         console.print("\nBeginning playlist sort")
         try:
             if len(self.playlist_names) != len(self.playlist_names_with_id):
-                raise RuntimeError(
-                    "playlist_names and playlist_names_with_id are not the same length"
-                )
+                raise RuntimeError("playlist_names and playlist_names_with_id are not the same length")
         except RuntimeError as error:
             log.error(
                 "playlist_names and playlist_names_with_id are not the same length",
@@ -441,21 +422,13 @@ class Monthify:
 
         with console.status("Sorting Tracks"):
             for month, year, playlist_id in self.playlist_names_with_id:
-                logger.info(
-                    "Sorting into playlist: {playlist}", playlist=(month, year[2:])
-                )
+                logger.info("Sorting into playlist: {playlist}", playlist=(month, year[2:]))
                 playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
                 playlist_name = f"{month} '{year[2:]}"
 
-                console.rule(
-                    f"Sorting into playlist [link={playlist_url}]{playlist_name}[/link]"
-                )
+                console.rule(f"Sorting into playlist [link={playlist_url}]{playlist_name}[/link]")
                 console.print("\t\n")
-                tracks = tuple(
-                    track
-                    for track in self.get_saved_track_gen()
-                    if track.track_month == (month, year)
-                )
+                tracks = tuple(track for track in self.get_saved_track_gen() if track.track_month == (month, year))
                 if not tracks:
                     break
                 else:
