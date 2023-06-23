@@ -1,12 +1,10 @@
 # Script
 import sys
-
-# from collections.abc import Iterable
 from datetime import datetime
 from os import makedirs, remove, stat
 from os.path import exists
 from pathlib import Path
-from typing import Any, Generator, Iterable, List, Reversible, Tuple
+from typing import Any, Generator, Iterable, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
 from loguru import logger
@@ -186,7 +184,7 @@ class Monthify:
 
         sp = self.sp
         playlists = self.get_user_saved_playlists()
-        already_created_playlists = []
+        already_created_playlists: List[str] = []
         created_playlists = []
         count = 0
         logger.info(f"Playlist creation called {name}")
@@ -271,7 +269,11 @@ class Monthify:
                             id=str(item["id"]),
                         )
 
-    def skip(self, status: bool, playlists: Iterable = None) -> None:
+    def skip(self, status: bool, playlists: Optional[Iterable] = None) -> None:
+        """
+        Skips playlist generation if status is True
+        """
+
         if status is True:
             console.print("Playlist generation skipped")
             logger.info("Playlist generation skipped")
