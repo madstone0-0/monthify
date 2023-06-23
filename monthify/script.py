@@ -309,6 +309,11 @@ class Monthify:
 
         if self.CREATE_PLAYLIST is False:
             if self.SKIP_PLAYLIST_CREATION is False and monthly_ran is False:
+                console.print("Playlist generation has not occured this month, Generating Playlists...")
+                logger.info("Requesting playlist creation")
+                self.skip(False, spotify_playlists)
+
+            elif self.SKIP_PLAYLIST_CREATION is False and monthly_ran is True:
                 console.print(
                     "Playlist generation has already occurred this month, do you still want to generate "
                     "playlists? (yes/no)"
