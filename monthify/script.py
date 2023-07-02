@@ -1,15 +1,14 @@
 # Script
 import sys
 from datetime import datetime
-from os import makedirs, remove, stat
+from os import remove, stat
 from os.path import exists
 from pathlib import Path
 from typing import Any, Generator, Iterable, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
-from loguru import logger
 
-from monthify import ERROR, SUCCESS, appdata_location, console
+from monthify import ERROR, SUCCESS, appdata_location, console, logger
 from monthify.auth import Auth
 from monthify.track import Track
 from monthify.utils import conditional_decorator, normalize_text, sort_chronologically
@@ -17,10 +16,6 @@ from monthify.utils import conditional_decorator, normalize_text, sort_chronolog
 MAX_RESULTS = 10000
 CACHE_LIFETIME = 30
 
-makedirs(f"{appdata_location}/logs", exist_ok=True)
-logger.add(sys.stderr, format="{time} {level} {message}", filter="monthify", level="INFO")
-logger.remove()
-logger.add(f"{appdata_location}/logs/monthify.log", rotation="00:00", compression="zip")
 existing_playlists_file = f"{appdata_location}/existing_playlists_file.dat"
 last_run_file = f"{appdata_location}/last_run.txt"
 last_run_format = "%Y-%m-%d %H:%M:%S"
@@ -228,7 +223,7 @@ class Monthify:
 
         tracks = self.get_user_saved_tracks()
         logger.info("Retrieving saved track info")
-        track_list = (
+        return (
             Track(
                 title=item["track"]["name"],
                 artist=item["track"]["artists"][0]["name"],
@@ -237,7 +232,6 @@ class Monthify:
             )
             for item in tracks
         )
-        return track_list
 
     def get_playlist_names_names(self):
         """
