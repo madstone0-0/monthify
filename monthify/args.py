@@ -5,9 +5,7 @@ from monthify.config import Config
 
 
 def get_args(config: Config) -> ArgumentParser:
-    parser = ArgumentParser(
-        prog=appname.lower(), description="Sorts saved spotify tracks by month saved"
-    )
+    parser = ArgumentParser(prog=appname.lower(), description="Sorts saved spotify tracks by month saved")
 
     creation_group = parser.add_mutually_exclusive_group()
 
@@ -42,6 +40,10 @@ def get_args(config: Config) -> ArgumentParser:
         required=False,
         action="store_true",
         help="Displays version then exits",
+    )
+
+    parser.add_argument(
+        "--public", default=False, required=False, action="store_true", help="Set created playlists to public"
     )
 
     creation_group.add_argument(

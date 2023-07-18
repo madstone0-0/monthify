@@ -33,7 +33,9 @@ class Monthify:
         SKIP_PLAYLIST_CREATION: bool,
         LOGOUT: bool,
         CREATE_PLAYLIST: bool,
+        MAKE_PUBLIC: bool,
     ):
+        self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
         self.logout()
         authentication = auth
@@ -190,21 +192,19 @@ class Monthify:
                 self.already_created_playlists_inter.append(name)
                 logger.info(f"Playlist already exists {name}")
                 return
-        if count != 0:
-            console.print(f"Playlist {name} already exists")
-        else:
-            console.print(f"Creating playlist {name}")
-            logger.info(f"Creating playlist {name}")
-            playlist = sp.user_playlist_create(
-                user=self.current_username,
-                name=name,
-                public=False,
-                collaborative=False,
-                description=f"{name}",
-            )
-            created_playlists.append(playlist)
-            console.print(f"Added {name} playlist")
-            logger.info(f"Added {name} playlist")
+
+        console.print(f"Creating playlist {name}")
+        logger.info(f"Creating playlist {name}")
+        playlist = sp.user_playlist_create(
+            user=self.current_username,
+            name=name,
+            public=self.MAKE_PUBLIC,
+            collaborative=False,
+            description=f"{name}",
+        )
+        created_playlists.append(playlist)
+        console.print(f"Added {name} playlist")
+        logger.info(f"Added {name} playlist")
         self.has_created_playlists = True if len(created_playlists) > 0 else False
         self.already_created_playlists_inter = already_created_playlists
 
@@ -216,7 +216,7 @@ class Monthify:
         with console.status("Retrieving user saved tracks"):
             self.get_saved_track_gen()
 
-    def get_saved_track_gen(self) -> Generator[Track, Any, None]:
+    def get_saved_track_gen(self) -> Iterator[Track]:
         """
         Collates the user's saved tracks and adds them to a list as a Track type
         """

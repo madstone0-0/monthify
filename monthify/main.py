@@ -5,7 +5,7 @@ from importlib.metadata import version
 from appdirs import user_data_dir
 from requests.exceptions import ConnectionError, ReadTimeout
 
-from monthify import ERROR, appauthor, appname, console
+from monthify import ERROR, appauthor, appname, console, logger
 from monthify.args import get_args, parse_args
 from monthify.auth import Auth
 from monthify.config import Config
@@ -24,6 +24,7 @@ if VERSION:
     console.print(f"v{version('monthify')}")
     sys.exit(0)
 
+MAKE_PUBLIC = args.public
 SKIP_PLAYLIST_CREATION = args.skip_playlist_creation
 CREATE_PLAYLIST = args.create_playlists
 LOGOUT = args.logout
@@ -42,9 +43,8 @@ else:
     CLIENT_SECRET = config_args["CLIENT_SECRET"]
 
 if not CLIENT_ID or not CLIENT_SECRET:
-    console.print(
-        "Client id and secret needed to connect to spotify's servers", style=ERROR
-    )
+    console.print("Client id and secret needed to connect to spotify's servers", style=ERROR)
+    logger.error("Client id and secret id not provided, exiting...")
     sys.exit(1)
 
 
@@ -65,6 +65,7 @@ def run():
             SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
             LOGOUT=LOGOUT,
             CREATE_PLAYLIST=CREATE_PLAYLIST,
+            MAKE_PUBLIC=MAKE_PUBLIC,
         )
 
         # Starting info
@@ -89,11 +90,12 @@ def run():
         controller.update_last_run()
     except KeyboardInterrupt:
         console.print("Exiting...")
-    except (ConnectionError, ReadTimeout):
+    except (ConnectionError, ReadTimeout) as e:
         console.print(
             "Cannot connect to Spotify servers, please check your internet connection and try again",
             style=ERROR,
         )
+        logger.error(f"Could not connect to Spotify servers, stacktrace:\n{e.strerror}")
         sys.exit(1)
 
 
