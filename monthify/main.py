@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import sys
 from importlib.metadata import version
+from time import perf_counter
 
 from appdirs import user_data_dir
 from requests.exceptions import ConnectionError, ReadTimeout
@@ -68,6 +69,7 @@ def run():
             MAKE_PUBLIC=MAKE_PUBLIC,
         )
 
+        t0 = perf_counter()
         # Starting info
         controller.starting()
 
@@ -88,6 +90,8 @@ def run():
 
         # Update last run time
         controller.update_last_run()
+
+        logger.debug(f"Program completed in {perf_counter() - t0:.2f} s")
     except KeyboardInterrupt:
         console.print("Exiting...")
     except (ConnectionError, ReadTimeout) as e:

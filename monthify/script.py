@@ -4,6 +4,7 @@ from datetime import datetime
 from os import remove, stat
 from os.path import exists
 from pathlib import Path
+from time import perf_counter
 from typing import Iterable, Iterator, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
@@ -63,12 +64,9 @@ class Monthify:
             self.already_created_playlists_exists = False
 
         self.already_created_playlists_inter: List[str] = []
-        if exists(last_run_file):
-            if stat(last_run_file).st_size != 0:
-                with open(last_run_file, "r", encoding="utf_8") as f:
-                    self.last_run = f.read()
-            else:
-                self.last_run = ""
+        if exists(last_run_file) and stat(last_run_file).st_size != 0:
+            with open(last_run_file, "r", encoding="utf_8") as f:
+                self.last_run = f.read()
         else:
             self.last_run = ""
 
@@ -183,16 +181,24 @@ class Monthify:
         playlists = self.get_user_saved_playlists()
         already_created_playlists: List[str] = []
         created_playlists = []
-        count = 0
         logger.info(f"Playlist creation called {name}")
+        t0 = perf_counter()
+        # playlist_names = [playlist["name"] for playlist in playlists]
+        # if search_normalized(playlist_names, name):
+        #     console.print(f"Playlist {name} already exists")
+        #     self.already_created_playlists_inter.append(name)
+        #     logger.info(f"Playlist already exists {name}")
+        #     logger.debug(f"Playlist creation took {perf_counter() - t0} s")
+        #     return
         for item in playlists:
             if normalize_text(item["name"]) == normalize_text(name):
-                count += 1
                 console.print(f"Playlist {name} already exists")
                 self.already_created_playlists_inter.append(name)
                 logger.info(f"Playlist already exists {name}")
+                logger.debug(f"Playlist creation took {perf_counter() - t0} s")
                 return
 
+        logger.debug(f"Playlist creation took {perf_counter() - t0} s")
         console.print(f"Creating playlist {name}")
         logger.info(f"Creating playlist {name}")
         playlist = sp.user_playlist_create(
@@ -275,6 +281,7 @@ class Monthify:
             logger.info("Playlist generation starting")
             if playlists is None:
                 RuntimeError("Playlists have not passed been passed to skip function")
+            t0 = perf_counter()
             for month, year in reversed(self.playlist_names):
                 playlist_name = str(month + " '" + year[2:])
                 self.create_playlist(playlist_name)
@@ -370,6 +377,22 @@ class Monthify:
                     " will be added to the playlist "
                 )
                 to_be_added_uris.append(track.uri)
+            # if search_normalized(playlist_uris, track.uri):
+            #     logger.info(f"Track: {track} already in playlist: {str(playlist_id)}")
+            #     track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
+            #     console.print(
+            #         f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link]"
+            #         " already exists in the playlist"
+            #     )
+            # else:
+            #     logger.info(f"Track: {track} will be added to playlist: {str(playlist_id)}")
+            #     track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
+            #     console.print(
+            #         f"[bold green][+][/bold green]\t[link={track_url}][bold green]{track.title} by {track.artist}"
+            #         "[/bold green][/link]"
+            #         " will be added to the playlist "
+            #     )
+            #     to_be_added_uris.append(track.uri)
 
         if not to_be_added_uris:
             logger.info("No tracks to add to playlist: {playlist}", playlist=playlist_id)
@@ -418,6 +441,7 @@ class Monthify:
             )
             sys.exit(1)
 
+        t0 = perf_counter()
         with console.status("Sorting Tracks"):
             for month, year, playlist_id in self.playlist_names_with_id:
                 logger.info("Sorting into playlist: {playlist}", playlist=(month, year[2:]))
@@ -434,7 +458,12 @@ class Monthify:
                         "Adding tracks to playlist: {playlist}",
                         playlist=str(playlist_id),
                     )
+                    t0 = perf_counter()
                     self.add_to_playlist(tracks, playlist_id)
+                    logger.debug(
+                        f"Finished adding tracks to playlist: {str(playlist_id)} in {perf_counter() - t0:.2f}s"
+                    )
+        logger.debug(f"Finished sorting tracks in {perf_counter() - t0:.2f}s")
 
         count = ""
         if self.total_tracks_added == 0:
@@ -447,3 +476,9 @@ class Monthify:
         console.print(count)
         console.print("Finished playlist sort")
         logger.info("Finished script execution")
+
+    def clean_playlists(self):
+        """
+        Removes duplicate tracks from playlists
+        """
+        pass
