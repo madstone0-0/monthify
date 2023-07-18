@@ -4,7 +4,7 @@ from datetime import datetime
 from os import remove, stat
 from os.path import exists
 from pathlib import Path
-from typing import Any, Generator, Iterable, List, Optional, Reversible, Tuple
+from typing import Iterable, Iterator, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
 
@@ -277,11 +277,8 @@ class Monthify:
                 RuntimeError("Playlists have not passed been passed to skip function")
             for month, year in reversed(self.playlist_names):
                 playlist_name = str(month + " '" + year[2:])
-                if playlist_name in self.already_created_playlists and playlist_name in playlists:
-                    console.print(f"{month} '{year[2:]} playlist already exists")
-                else:
-                    name = month + " '" + year[2:]
-                    self.create_playlist(name)
+                self.create_playlist(playlist_name)
+            logger.debug(f"Entire playlist generation took {perf_counter() - t0} s")
 
     def create_monthly_playlists(self):
         """
@@ -352,7 +349,7 @@ class Monthify:
             playlist=str(playlist_id),
         )
         playlist_items = self.get_playlist_items(playlist_id)
-        to_be_added_uris: list[str] = []
+        to_be_added_uris: List[str] = []
 
         playlist_uris: Iterable[str] = tuple(item["track"]["uri"] for item in playlist_items)
 
