@@ -8,6 +8,56 @@ date_data = [
     ("2037-12-12T02:04:46Z", ("December", "2037")),
 ]
 
+
+dataset = [
+    "December '20",
+    "August '20",
+    "February '20",
+    "July '21",
+    "May '20",
+    "April '20",
+    "October '21",
+    "March '22",
+    "December '19",
+    "January '22",
+    "August '22",
+    "May '22",
+    "September '22",
+    "February '22",
+    "November '20",
+    "June '20",
+    "March '21",
+    "July '22",
+    "January '21",
+    "August '21",
+    "September '21",
+    "May '21",
+    "April '22",
+    "December '21",
+    "November '19",
+    "February '21",
+    "July '20",
+    "October '20",
+    "November '22",
+    "June '22",
+    "April '21",
+    "January '20",
+    "March '20",
+    "November '21",
+    "June '21",
+    "September '20",
+    "October '22",
+]
+
+search_data = [
+    (dataset, "October '22", True),
+    (dataset, "October '21", True),
+    (dataset, "October '27", False),
+    (dataset, "Middd", False),
+    (dataset, "😭", False),
+]
+
+
 playlist_data = [
     (
         [
