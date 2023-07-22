@@ -26,8 +26,6 @@ user_cache: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 
 class Monthify:
-    total_tracks_added = 0
-
     def __init__(
         self,
         auth: Auth,
@@ -47,23 +45,23 @@ class Monthify:
         self.current_username: str
         self.current_display_name: str
         self.playlist_names: List[Tuple[str, str]]
+        self.total_tracks_added = 0
         self.already_created_playlists_exists = False
         if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
             if (
                 datetime.now() - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
             ).days >= CACHE_LIFETIME:
                 remove(existing_playlists_file)
-                self.already_created_playlists = []
+                self.already_created_playlists = set([])
                 self.already_created_playlists_exists = False
             else:
                 with open(existing_playlists_file, "r", encoding="utf_8") as f:
-                    self.already_created_playlists = list(f.read().splitlines())
+                    self.already_created_playlists = set(f.read().splitlines())
                     self.already_created_playlists_exists = True
         else:
-            self.already_created_playlists = []
+            self.already_created_playlists = set([])
             self.already_created_playlists_exists = False
 
-        self.already_created_playlists_inter: List[str] = []
         if exists(last_run_file) and stat(last_run_file).st_size != 0:
             with open(last_run_file, "r", encoding="utf_8") as f:
                 self.last_run = f.read()
@@ -179,7 +177,6 @@ class Monthify:
 
         sp = self.sp
         playlists = self.get_user_saved_playlists()
-        already_created_playlists: List[str] = []
         created_playlists = []
         logger.info(f"Playlist creation called {name}")
         t0 = perf_counter()
@@ -193,7 +190,7 @@ class Monthify:
         for item in playlists:
             if normalize_text(item["name"]) == normalize_text(name):
                 console.print(f"Playlist {name} already exists")
-                self.already_created_playlists_inter.append(name)
+                self.already_created_playlists.add(name)
                 logger.info(f"Playlist already exists {name}")
                 logger.debug(f"Playlist creation took {perf_counter() - t0} s")
                 return
@@ -211,8 +208,7 @@ class Monthify:
         created_playlists.append(playlist)
         console.print(f"Added {name} playlist")
         logger.info(f"Added {name} playlist")
-        self.has_created_playlists = True if len(created_playlists) > 0 else False
-        self.already_created_playlists_inter = already_created_playlists
+        self.has_created_playlists = len(created_playlists) > 0
 
     def get_saved_track_info(self) -> None:
         """
@@ -302,7 +298,7 @@ class Monthify:
         has_month_passed = datetime.strptime(last_run, last_run_format).strftime("%B") != datetime.now().strftime("%B")
         if has_month_passed and self.already_created_playlists_exists is False:
             self.skip(False, spotify_playlists)
-        elif has_month_passed is False and self.already_created_playlists_exists:
+        elif not has_month_passed and self.already_created_playlists_exists:
             monthly_ran = True
 
         if self.CREATE_PLAYLIST is False:
@@ -323,7 +319,7 @@ class Monthify:
                 else:
                     self.skip(False, spotify_playlists)
 
-            elif self.already_created_playlists_exists is False:
+            elif not self.already_created_playlists_exists:
                 console.print("Somehow the playlists do not exist. Generating Playlists...")
                 logger.info("Requesting playlist creation")
                 self.skip(False, spotify_playlists)
@@ -333,13 +329,6 @@ class Monthify:
 
         else:
             self.skip(False, spotify_playlists)
-
-        if self.already_created_playlists_inter:
-            self.already_created_playlists = [
-                *self.already_created_playlists,
-                *self.already_created_playlists_inter,
-            ]
-            self.already_created_playlists = list(dict.fromkeys(self.already_created_playlists))
 
         if self.already_created_playlists:
             with open(existing_playlists_file, "w", encoding="utf_8") as f:
@@ -377,22 +366,6 @@ class Monthify:
                     " will be added to the playlist "
                 )
                 to_be_added_uris.append(track.uri)
-            # if search_normalized(playlist_uris, track.uri):
-            #     logger.info(f"Track: {track} already in playlist: {str(playlist_id)}")
-            #     track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
-            #     console.print(
-            #         f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link]"
-            #         " already exists in the playlist"
-            #     )
-            # else:
-            #     logger.info(f"Track: {track} will be added to playlist: {str(playlist_id)}")
-            #     track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
-            #     console.print(
-            #         f"[bold green][+][/bold green]\t[link={track_url}][bold green]{track.title} by {track.artist}"
-            #         "[/bold green][/link]"
-            #         " will be added to the playlist "
-            #     )
-            #     to_be_added_uris.append(track.uri)
 
         if not to_be_added_uris:
             logger.info("No tracks to add to playlist: {playlist}", playlist=playlist_id)
@@ -476,9 +449,3 @@ class Monthify:
         console.print(count)
         console.print("Finished playlist sort")
         logger.info("Finished script execution")
-
-    def clean_playlists(self):
-        """
-        Removes duplicate tracks from playlists
-        """
-        pass

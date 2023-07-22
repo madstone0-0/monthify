@@ -1,7 +1,7 @@
 # Utilities
 
 import datetime
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 
 
 def extract_month_and_year(date: str) -> Tuple[str, str]:
@@ -12,7 +12,7 @@ def extract_month_and_year(date: str) -> Tuple[str, str]:
     return str(month), str(year)
 
 
-def sort_chronologically(playlist_names: List) -> List[str]:
+def sort_chronologically(playlist_names: Iterable) -> List[str]:
     """Sort months and years chronologically for playlist names"""
     sorted_list = sorted(
         playlist_names,
@@ -47,18 +47,18 @@ def strIsGreater(a: str, b: str) -> bool:
     """
     Compare two strings by summing their ascii values
     """
-    if sum(ord(c) for c in a) > sum(ord(c) for c in b):
+    if sum(ord(c) for c in a.lower()) > sum(ord(c) for c in b.lower()):
         return True
     return False
 
 
-def search_normalized(dataset: List[str], target: str) -> bool:
+def search_normalized(dataset: Iterable[str], target: str) -> bool:
     """
     Binary search for target in dataset
     """
     low = 0
     high = len(dataset) - 1
-    sorted_dataset = sorted(dataset, key=lambda a: sum(ord(c) for c in a))
+    sorted_dataset = sorted(dataset, key=lambda a: sum(ord(c) for c in a.lower()))
 
     while low <= high:
         mid = (high + low) // 2
