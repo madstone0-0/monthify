@@ -86,7 +86,7 @@ def run():
         controller.get_monthly_playlist_ids()
 
         # Add saved tracks to created playlists by month and year
-        controller.sort_tracks_by_month()
+        controller.sort_all_tracks_by_month()
 
         # Update last run time
         controller.update_last_run()
