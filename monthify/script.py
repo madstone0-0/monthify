@@ -172,6 +172,7 @@ class Monthify:
         return results
 
     def create_playlist(self, name: str) -> None:
+    def create_playlist(self, name: str) -> str:
         """
         Creates playlist with name var checking if the playlist already exists in the user's library,
         if it does the user is informed
@@ -182,13 +183,8 @@ class Monthify:
         created_playlists = []
         logger.info(f"Playlist creation called {name}")
         t0 = perf_counter()
-        # playlist_names = [playlist["name"] for playlist in playlists]
-        # if search_normalized(playlist_names, name):
-        #     console.print(f"Playlist {name} already exists")
-        #     self.already_created_playlists_inter.append(name)
-        #     logger.info(f"Playlist already exists {name}")
-        #     logger.debug(f"Playlist creation took {perf_counter() - t0} s")
-        #     return
+        log = ""
+
         for item in playlists:
             if normalize_text(item["name"]) == normalize_text(name):
                 console.print(f"Playlist {name} already exists")
@@ -198,7 +194,7 @@ class Monthify:
                 return
 
         logger.debug(f"Playlist creation took {perf_counter() - t0} s")
-        console.print(f"Creating playlist {name}")
+        log += "\n" f"Creating playlist {name}"
         logger.info(f"Creating playlist {name}")
         playlist = sp.user_playlist_create(
             user=self.current_username,
@@ -208,9 +204,11 @@ class Monthify:
             description=f"{name}",
         )
         created_playlists.append(playlist)
-        console.print(f"Added {name} playlist")
+        log += "\n" f"Added {name} playlist"
+        log += "\n"
         logger.info(f"Added {name} playlist")
         self.has_created_playlists = len(created_playlists) > 0
+        return log
 
     def get_saved_track_info(self) -> None:
         """
@@ -280,9 +278,14 @@ class Monthify:
             if playlists is None:
                 RuntimeError("Playlists have not passed been passed to skip function")
             t0 = perf_counter()
-            for month, year in reversed(self.playlist_names):
-                playlist_name = str(month + " '" + year[2:])
-                self.create_playlist(playlist_name)
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                playlist_names = [str(month + " '" + year[2:]) for month, year in reversed(self.playlist_names)]
+
+                logs = executor.map(self.create_playlist, playlist_names)
+                for log in logs:
+                    if log is not None:
+                        console.print(log)
+
             logger.debug(f"Entire playlist generation took {perf_counter() - t0} s")
 
     def create_monthly_playlists(self):
