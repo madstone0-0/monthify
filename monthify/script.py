@@ -29,12 +29,7 @@ user_cache: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 class Monthify:
     def __init__(
-        self,
-        auth: Auth,
-        SKIP_PLAYLIST_CREATION: bool,
-        LOGOUT: bool,
-        CREATE_PLAYLIST: bool,
-        MAKE_PUBLIC: bool,
+        self, auth: Auth, SKIP_PLAYLIST_CREATION: bool, LOGOUT: bool, CREATE_PLAYLIST: bool, MAKE_PUBLIC: bool
     ):
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
@@ -71,7 +66,7 @@ class Monthify:
             self.last_run = ""
 
         self.playlist_names_with_id: List[Tuple[str, str, str]] = []
-        self.name = """
+        self.name = r"""
         ___  ___            _   _     _  __       
         |  \/  |           | | | |   (_)/ _|      
         | .  . | ___  _ __ | |_| |__  _| |_ _   _ 
@@ -171,7 +166,6 @@ class Monthify:
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
         return results
 
-    def create_playlist(self, name: str) -> None:
     def create_playlist(self, name: str) -> str:
         """
         Creates playlist with name var checking if the playlist already exists in the user's library,
@@ -187,21 +181,17 @@ class Monthify:
 
         for item in playlists:
             if normalize_text(item["name"]) == normalize_text(name):
-                console.print(f"Playlist {name} already exists")
+                log += f"Playlist {name} already exists"
                 self.already_created_playlists.add(name)
                 logger.info(f"Playlist already exists {name}")
                 logger.debug(f"Playlist creation took {perf_counter() - t0} s")
-                return
+                return log
 
         logger.debug(f"Playlist creation took {perf_counter() - t0} s")
         log += "\n" f"Creating playlist {name}"
         logger.info(f"Creating playlist {name}")
         playlist = sp.user_playlist_create(
-            user=self.current_username,
-            name=name,
-            public=self.MAKE_PUBLIC,
-            collaborative=False,
-            description=f"{name}",
+            user=self.current_username, name=name, public=self.MAKE_PUBLIC, collaborative=False, description=f"{name}"
         )
         created_playlists.append(playlist)
         log += "\n" f"Added {name} playlist"
@@ -260,9 +250,7 @@ class Monthify:
                     if normalize_text((month + " '" + year[2:])) == normalize_text(item["name"]):
                         self.playlist_names_with_id.append((month, year, item["id"]))
                         logger.info(
-                            "Playlist name: {name} id: {id}",
-                            name=str(month + " '" + year[2:]),
-                            id=str(item["id"]),
+                            "Playlist name: {name} id: {id}", name=str(month + " '" + year[2:]), id=str(item["id"])
                         )
 
     def skip(self, status: bool, playlists: Optional[Iterable] = None) -> None:
@@ -339,7 +327,7 @@ class Monthify:
             with open(existing_playlists_file, "w", encoding="utf_8") as f:
                 f.write("\n".join(self.already_created_playlists))
 
-    def add_to_playlist(self, tracks: Reversible[Track], playlist_id: str) -> None:
+    def add_to_playlist(self, tracks: Reversible[Track], playlist_id: str) -> str:
         """
         Add a list of tracks to a specified playlist using playlist id
         """
@@ -403,15 +391,12 @@ class Monthify:
 
         tracks = tuple(track for track in self.get_saved_track_gen() if track.track_month == (month, year))
         if not tracks:
-            return
+            return log
         else:
             log.append(f"Sorting into playlist [link={playlist_url}]{playlist_name}[/link]")
             log.append("\t\n")
 
-            logger.info(
-                "Adding tracks to playlist: {playlist}",
-                playlist=str(playlist_id),
-            )
+            logger.info("Adding tracks to playlist: {playlist}", playlist=str(playlist_id))
             t0 = perf_counter()
             addedLog = self.add_to_playlist(tracks, playlist_id)
             logger.debug(f"Finished adding tracks to playlist: {str(playlist_id)} in {perf_counter() - t0:.2f}s")
@@ -424,8 +409,7 @@ class Monthify:
         """
 
         log = logger.bind(
-            playlist_names=self.playlist_names_with_id,
-            tracks=[track.title for track in self.get_saved_track_gen()],
+            playlist_names=self.playlist_names_with_id, tracks=[track.title for track in self.get_saved_track_gen()]
         )
 
         log.info("Started sort")
