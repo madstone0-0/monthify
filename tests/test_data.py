@@ -8,6 +8,33 @@ date_data = [
     ("2037-12-12T02:04:46Z", ("December", "2037")),
 ]
 
+mock_data = {
+    "playlists": [{"name": "December '20", "id": ""}
+                  ],
+    "tracks": [
+        {'added_at': '2023-08-01T19:48:57Z', 'track': {'album': {'album_type': 'album', 'artists': [
+            {'external_urls': {'spotify': 'https://open.spotify.com/artist/1oVj9JmPUPg4SQ2uerV2xc'},
+             'href': 'https://api.spotify.com/v1/artists/1oVj9JmPUPg4SQ2uerV2xc', 'id': '1oVj9JmPUPg4SQ2uerV2xc',
+             'name': 'Bad Brains', 'type': 'artist', 'uri': 'spotify:artist:1oVj9JmPUPg4SQ2uerV2xc'}],
+                                                                 'external_urls': {
+                                                                     'spotify': 'https://open.spotify.com/album/4NpepcKo9rQ8nkdCB6iWMP'},
+                                                                 'href': 'https://api.spotify.com/v1/albums/4NpepcKo9rQ8nkdCB6iWMP',
+                                                                 'id': '4NpepcKo9rQ8nkdCB6iWMP',
+                                                                 'name': 'Bad Brains', 'release_date': '1982',
+                                                                 'release_date_precision': 'year', 'total_tracks': 16,
+                                                                 'type': 'album',
+                                                                 'uri': 'spotify:album:4NpepcKo9rQ8nkdCB6iWMP'},
+                                                       'artists': [{'external_urls': {
+                                                           'spotify': 'https://open.spotify.com/artist/1oVj9JmPUPg4SQ2uerV2xc'},
+                                                           'href': 'https://api.spotify.com/v1/artists/1oVj9JmPUPg4SQ2uerV2xc',
+                                                           'id': '1oVj9JmPUPg4SQ2uerV2xc',
+                                                           'name': 'Bad Brains', 'type': 'artist',
+                                                           'uri': 'spotify:artist:1oVj9JmPUPg4SQ2uerV2xc'}],
+                                                       'id': '2Jkk7UunDLmtxSeHTgar4Z',
+                                                       'name': 'F.V.K. (Fearless Vampire Killers)', 'track_number': 9,
+                                                       'type': 'track', 'uri': 'spotify:track:2Jkk7UunDLmtxSeHTgar4Z'}}
+    ]
+}
 
 dataset = [
     "December '20",
@@ -56,7 +83,6 @@ search_data = [
     (dataset, "Middd", False),
     (dataset, "😭", False),
 ]
-
 
 playlist_data = [
     (
