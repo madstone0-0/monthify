@@ -17,7 +17,7 @@ from monthify.utils import conditional_decorator, normalize_text, sort_chronolog
 
 MAX_RESULTS = 10000
 CACHE_LIFETIME = 30
-MAX_WORKERS = 3
+MAX_WORKERS = 10
 
 existing_playlists_file = f"{appdata_location}/existing_playlists_file.dat"
 last_run_file = f"{appdata_location}/last_run.txt"
