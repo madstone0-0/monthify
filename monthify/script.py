@@ -100,7 +100,7 @@ class Monthify:
         console.print(self.name, style="green")
         with console.status("Retrieving user information"):
             self.current_display_name = self.get_username()["display_name"]
-            self.current_username = self.get_username()["uri"][13:]
+            self.current_username = self.get_username()["id"]
         console.print(f"Username: [cyan]{self.current_display_name}[/cyan]\n")
 
     def update_last_run(self) -> None:
