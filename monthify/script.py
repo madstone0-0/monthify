@@ -25,6 +25,7 @@ last_run_format = "%Y-%m-%d %H:%M:%S"
 saved_tracks_cache: TTLCache = TTLCache(maxsize=1000, ttl=86400)
 saved_playlists_cache: TTLCache = TTLCache(maxsize=1000, ttl=86400)
 user_cache: TTLCache = TTLCache(maxsize=1, ttl=86400)
+playlist_items_cache: TTLCache = TTLCache(maxsize=100, ttl=86400)
 
 
 class Monthify:
@@ -161,6 +162,7 @@ class Monthify:
         logger.info("Ending user saved playlists fetch")
         return results
 
+    @cached(playlist_items_cache)
     def get_playlist_items(self, playlist_id: str) -> List[dict]:
         """
         Retrieves all the tracks in a specified spotify playlist identified by playlist id
@@ -171,7 +173,6 @@ class Monthify:
         logger.info(f"Ending playlist item fetch\n id: {playlist_id}")
         return results
 
-    def create_playlist(self, name: str) -> None:
     def create_playlist(self, name: str) -> str:
         """
         Creates playlist with name var checking if the playlist already exists in the user's library,
@@ -187,11 +188,11 @@ class Monthify:
 
         for item in playlists:
             if normalize_text(item["name"]) == normalize_text(name):
-                console.print(f"Playlist {name} already exists")
+                log += f"Playlist {name} already exists"
                 self.already_created_playlists.add(name)
                 logger.info(f"Playlist already exists {name}")
                 logger.debug(f"Playlist creation took {perf_counter() - t0} s")
-                return
+                return log
 
         logger.debug(f"Playlist creation took {perf_counter() - t0} s")
         log += "\n" f"Creating playlist {name}"
@@ -279,7 +280,7 @@ class Monthify:
                 RuntimeError("Playlists have not passed been passed to skip function")
             t0 = perf_counter()
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                playlist_names = [str(month + " '" + year[2:]) for month, year in reversed(self.playlist_names)]
+                playlist_names = [str(month + " '" + year[2:]) for month, year in self.playlist_names]
 
                 logs = executor.map(self.create_playlist, playlist_names)
                 for log in logs:
@@ -469,3 +470,25 @@ class Monthify:
         console.print(count)
         console.print("Finished playlist sort")
         logger.info("Finished script execution")
+
+    def clean_playlist(self, playlist_id: str):
+        counts = dict()
+        tracks_to_remove = []
+        items = self.get_playlist_items(playlist_id)
+        snapshot_id = self.sp.playlist(playlist_id, fields="snapshot_id")["snapshot_id"]
+        for idx, item in enumerate(items):
+            counts[item["track"]["uri"]] = {
+                "count": (counts.get(item["track"]["uri"], {"count": 0, "positions": []}))["count"] + 1,
+                "positions": [idx + 1],
+            }
+
+        for item_id, values in counts.items():
+            if values["count"] > 1:
+                tracks_to_remove.append({"uri": item_id.split(":")[2], "positions": values["positions"]})
+
+        if tracks_to_remove:
+            tracks_to_remove_chunks = (tracks_to_remove[x : x + 100] for x in range(0, len(tracks_to_remove), 100))
+            for chunk in tracks_to_remove_chunks:
+                self.sp.playlist_remove_specific_occurrences_of_items(
+                    playlist_id=playlist_id, items=chunk, snapshot_id=snapshot_id
+                )

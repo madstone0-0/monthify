@@ -61,6 +61,7 @@ def run():
                     "user-library-read",
                     "playlist-read-private",
                     "playlist-modify-private",
+                    "playlist-modify-public",
                 ),
             ),
             SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
