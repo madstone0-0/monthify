@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 date_data = [
     ("2022-11-23T02:04:46Z", ("November", "2022")),
     ("2022-12-12T02:04:46Z", ("December", "2022")),
@@ -9,31 +11,44 @@ date_data = [
 ]
 
 mock_data = {
-    "playlists": [{"name": "December '20", "id": ""}
-                  ],
-    "tracks": [
-        {'added_at': '2023-08-01T19:48:57Z', 'track': {'album': {'album_type': 'album', 'artists': [
-            {'external_urls': {'spotify': 'https://open.spotify.com/artist/1oVj9JmPUPg4SQ2uerV2xc'},
-             'href': 'https://api.spotify.com/v1/artists/1oVj9JmPUPg4SQ2uerV2xc', 'id': '1oVj9JmPUPg4SQ2uerV2xc',
-             'name': 'Bad Brains', 'type': 'artist', 'uri': 'spotify:artist:1oVj9JmPUPg4SQ2uerV2xc'}],
-                                                                 'external_urls': {
-                                                                     'spotify': 'https://open.spotify.com/album/4NpepcKo9rQ8nkdCB6iWMP'},
-                                                                 'href': 'https://api.spotify.com/v1/albums/4NpepcKo9rQ8nkdCB6iWMP',
-                                                                 'id': '4NpepcKo9rQ8nkdCB6iWMP',
-                                                                 'name': 'Bad Brains', 'release_date': '1982',
-                                                                 'release_date_precision': 'year', 'total_tracks': 16,
-                                                                 'type': 'album',
-                                                                 'uri': 'spotify:album:4NpepcKo9rQ8nkdCB6iWMP'},
-                                                       'artists': [{'external_urls': {
-                                                           'spotify': 'https://open.spotify.com/artist/1oVj9JmPUPg4SQ2uerV2xc'},
-                                                           'href': 'https://api.spotify.com/v1/artists/1oVj9JmPUPg4SQ2uerV2xc',
-                                                           'id': '1oVj9JmPUPg4SQ2uerV2xc',
-                                                           'name': 'Bad Brains', 'type': 'artist',
-                                                           'uri': 'spotify:artist:1oVj9JmPUPg4SQ2uerV2xc'}],
-                                                       'id': '2Jkk7UunDLmtxSeHTgar4Z',
-                                                       'name': 'F.V.K. (Fearless Vampire Killers)', 'track_number': 9,
-                                                       'type': 'track', 'uri': 'spotify:track:2Jkk7UunDLmtxSeHTgar4Z'}}
-    ]
+    "username": {
+        "display_name": "Hudson",
+        "id": "8vx0z9rwpse4fzr62po8sca1r",
+        "uri": "spotify:user:8vx0z9rwpse4fzr62po8sca1r",
+    },
+    "playlists": {
+        "items": [{"name": "December '20", "id": f"{uuid4()}"}, {"name": "August '23", "id": f"{uuid4()}"}],
+        "next": None,
+    },
+    "tracks": {
+        "items": [
+            {
+                "added_at": "2023-08-01T19:48:57Z",
+                "track": {
+                    "id": "2Jkk7UunDLmtxSeHTgar4Z",
+                    "name": "F.V.K. (Fearless Vampire Killers)",
+                    "uri": "spotify:track:2Jkk7UunDLmtxSeHTgar4Z",
+                },
+            },
+            {
+                "added_at": "2023-07-29T08:44:20Z",
+                "track": {
+                    "id": "0YnP5BtP6lTwQV8gLOzaov",
+                    "name": "Banned in D.C.",
+                    "uri": "spotify:track:0YnP5BtP6lTwQV8gLOzaov",
+                },
+            },
+            {
+                "added_at": "2023-07-22T19:38:08Z",
+                "track": {
+                    "id": "3If9Idk1rglOqubIsJcpmv",
+                    "name": "In The Garage",
+                    "uri": "spotify:track:3If9Idk1rglOqubIsJcpmv",
+                },
+            },
+        ],
+        "next": None,
+    },
 }
 
 dataset = [
