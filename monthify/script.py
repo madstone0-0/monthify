@@ -296,7 +296,7 @@ class Monthify:
 
         if self.CREATE_PLAYLIST is False:
             if self.SKIP_PLAYLIST_CREATION is False and monthly_ran is False:
-                console.print("Playlist generation has not occured this month, Generating Playlists...")
+                console.print("Playlist generation has not occurred this month, Generating Playlists...")
                 logger.info("Requesting playlist creation")
                 self.skip(False, spotify_playlists)
 
@@ -382,12 +382,12 @@ class Monthify:
         logger.info("Ended track addition")
         return log
 
-    def sort_tracks_by_month(self, playlist: List[Tuple[str, str, str]]) -> List[str]:
+    def sort_tracks_by_month(self, playlist: Tuple[str, str, str]) -> List[str]:
         month, year, playlist_id = playlist
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
         playlist_name = f"{month} '{year[2:]}"
         logger.info("Sorting into playlist: {playlist}", playlist=playlist_name)
-        log = []
+        log: list[str] = []
 
         tracks = tuple(track for track in self.get_saved_track_gen() if track.track_month == (month, year))
         if not tracks:
