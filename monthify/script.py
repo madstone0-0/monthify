@@ -1,12 +1,13 @@
 # Script
 import sys
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from os import remove, stat
 from os.path import exists
 from pathlib import Path
 from time import perf_counter
-from typing import Iterable, Iterator, List, Optional, Reversible, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
 
@@ -393,6 +394,7 @@ class Monthify:
 
         tracks = tuple(track for track in self.get_saved_track_gen() if track.track_month == (month, year))
         if not tracks:
+            self.clean_playlist(playlist_id)
             return log
         else:
             log.append(f"Sorting into playlist [link={playlist_url}]{playlist_name}[/link]")
@@ -403,6 +405,7 @@ class Monthify:
             addedLog = self.add_to_playlist(tracks, playlist_id)
             logger.debug(f"Finished adding tracks to playlist: {str(playlist_id)} in {perf_counter() - t0:.2f}s")
             log.append(addedLog)
+            self.clean_playlist(playlist_id)
             return log
 
     def sort_all_tracks_by_month(self):
@@ -456,16 +459,20 @@ class Monthify:
         console.print("Finished playlist sort")
         logger.info("Finished script execution")
 
-    def clean_playlist(self, playlist_id: str):
-        counts = dict()
+    def clean_playlist(self, playlist_id: str) -> None:
+        counts: Dict[str, Any] = dict()
+        counts = defaultdict(lambda: {"count": 0, "positions": []})
         tracks_to_remove = []
         items = self.get_playlist_items(playlist_id)
         snapshot_id = self.sp.playlist(playlist_id, fields="snapshot_id")["snapshot_id"]
         for idx, item in enumerate(items):
-            counts[item["track"]["uri"]] = {
-                "count": (counts.get(item["track"]["uri"], {"count": 0, "positions": []}))["count"] + 1,
-                "positions": [idx + 1],
-            }
+            # counts[item["track"]["uri"]] = {
+            #     "count": (counts.get(item["track"]["uri"], {"count": 0, "positions": []}))["count"] + 1,
+            #     "positions": [idx + 1],
+            # }
+            currItem = counts[item["track"]["uri"]]
+            currItem["count"] += 1
+            currItem["positions"].append(idx + 1)
 
         for item_id, values in counts.items():
             if values["count"] > 1:
