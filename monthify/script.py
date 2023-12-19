@@ -177,13 +177,14 @@ class Monthify:
 
         sp = self.sp
         playlists = self.get_user_saved_playlists()
+        playlists = [normalize_text(item["name"]) for item in playlists]
         created_playlists = []
         logger.info(f"Playlist creation called {name}")
         t0 = perf_counter()
         log = ""
 
         for item in playlists:
-            if normalize_text(item["name"]) == normalize_text(name):
+            if item == normalize_text(name):
                 log += f"Playlist {name} already exists"
                 self.already_created_playlists.add(name)
                 logger.info(f"Playlist already exists {name}")
@@ -191,14 +192,13 @@ class Monthify:
                 return log
 
         logger.debug(f"Playlist creation took {perf_counter() - t0} s")
-        log += "\n" f"Creating playlist {name}"
+        log += f"\nCreating playlist {name}"
         logger.info(f"Creating playlist {name}")
         playlist = sp.user_playlist_create(
             user=self.current_username, name=name, public=self.MAKE_PUBLIC, collaborative=False, description=f"{name}"
         )
         created_playlists.append(playlist)
-        log += "\n" f"Added {name} playlist"
-        log += "\n"
+        log += f"\nAdded {name} playlist\n"
         logger.info(f"Added {name} playlist")
         self.has_created_playlists = len(created_playlists) > 0
         return log

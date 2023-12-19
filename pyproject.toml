@@ -13,6 +13,7 @@ rich = "^13.1.0"
 spotipy = "^2.22.0"
 appdirs = "^1.4.4"
 toml = "^0.10.2"
+algorithms = "^0.1.4"
 
 [tool.poetry.group.dev.dependencies]
 icecream = "^2.1.3"
