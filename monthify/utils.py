@@ -50,26 +50,3 @@ def strIsGreater(a: str, b: str) -> bool:
     if sum(ord(c) for c in a.lower()) > sum(ord(c) for c in b.lower()):
         return True
     return False
-
-
-def search_normalized(dataset: Iterable[str], target: str) -> bool:
-    """
-    Binary search for target in dataset
-    """
-    low = 0
-    high = len(dataset) - 1
-    sorted_dataset = sorted(dataset, key=lambda a: sum(ord(c) for c in a.lower()))
-
-    while low <= high:
-        mid = (high + low) // 2
-        guess = sorted_dataset[mid]
-
-        if normalize_text(guess) == normalize_text(target):
-            return True
-
-        if strIsGreater(guess, target):
-            high = mid - 1
-        else:
-            low = mid + 1
-
-    return False
