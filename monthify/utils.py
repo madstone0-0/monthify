@@ -12,12 +12,12 @@ def extract_month_and_year(date: str) -> Tuple[str, str]:
     return str(month), str(year)
 
 
-def sort_chronologically(playlist_names: Iterable) -> List[str]:
+def sort_chronologically(playlist_names: Iterable, reverse: bool = True) -> List[str]:
     """Sort months and years chronologically for playlist names"""
     sorted_list = sorted(
         playlist_names,
         key=lambda d: (d[1], datetime.datetime.strptime(d[0], "%B")),
-        reverse=True,
+        reverse=reverse,
     )
     return sorted_list
 

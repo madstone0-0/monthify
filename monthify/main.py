@@ -29,6 +29,7 @@ MAKE_PUBLIC = args.public
 SKIP_PLAYLIST_CREATION = args.skip_playlist_creation
 CREATE_PLAYLIST = args.create_playlists
 LOGOUT = args.logout
+REVERSE = args.reverse
 
 if not config.is_using_config_file():
     CLIENT_ID = args.CLIENT_ID
@@ -67,6 +68,7 @@ def run():
             LOGOUT=LOGOUT,
             CREATE_PLAYLIST=CREATE_PLAYLIST,
             MAKE_PUBLIC=MAKE_PUBLIC,
+            REVERSE=REVERSE,
         )
 
         t0 = perf_counter()

@@ -29,7 +29,13 @@ user_cache: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 class Monthify:
     def __init__(
-        self, auth: Auth, SKIP_PLAYLIST_CREATION: bool, LOGOUT: bool, CREATE_PLAYLIST: bool, MAKE_PUBLIC: bool
+        self,
+        auth: Auth,
+        SKIP_PLAYLIST_CREATION: bool,
+        LOGOUT: bool,
+        CREATE_PLAYLIST: bool,
+        MAKE_PUBLIC: bool,
+        REVERSE: bool,
     ):
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
@@ -38,6 +44,7 @@ class Monthify:
         self.sp = authentication.get_spotipy()
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
+        self.REVERSE = REVERSE
         self.has_created_playlists = False
         self.current_username: str
         self.current_display_name: str
@@ -252,7 +259,7 @@ class Monthify:
                         logger.info(
                             "Playlist name: {name} id: {id}", name=str(month + " '" + year[2:]), id=str(item["id"])
                         )
-        self.playlist_names_with_id = sort_chronologically([*set(self.playlist_names_with_id)], False)
+        self.playlist_names_with_id = sort_chronologically([*set(self.playlist_names_with_id)], self.REVERSE)
 
     def skip(self, status: bool, playlists: Optional[Iterable] = None) -> None:
         """
