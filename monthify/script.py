@@ -45,6 +45,7 @@ class Monthify:
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
         self.REVERSE = REVERSE
+
         if MAX_WORKERS > 20:
             raise ValueError("Max workers cannot be greater than 20")
         if MAX_WORKERS <= 0:
@@ -110,12 +111,35 @@ class Monthify:
         """
 
         logger.info("Starting script execution")
+        logger.debug(
+            """Flags:
+Reverse: {reverse}
+Create playlists: {create_playlists}
+Skip playlist creation: {skip_playlist_creation}
+Make public: {make_public}
+Max Workers: {max_workers}
+Logout: {logout}""",
+            reverse=self.REVERSE,
+            create_playlists=self.CREATE_PLAYLIST,
+            skip_playlist_creation=self.SKIP_PLAYLIST_CREATION,
+            make_public=self.MAKE_PUBLIC,
+            max_workers=self.MAX_WORKERS,
+            logout=self.LOGOUT,
+        )
         console.print(self.name, style="green")
         with console.status("Retrieving user information"):
             self.current_display_name = self.get_username()["display_name"]
             self.current_username = self.get_username()["id"]
         console.print(f"Logged in as [cyan]{self.current_display_name}[/cyan]")
         console.print(f"Workers: [cyan]{self.MAX_WORKERS}[/cyan]")
+        logger.debug(
+            "Username: {username}",
+            username=self.current_username,
+        )
+        logger.debug(
+            "Display name: {display_name}",
+            display_name=self.current_display_name,
+        )
 
     def update_last_run(self) -> None:
         """
