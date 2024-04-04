@@ -17,7 +17,6 @@ from monthify.utils import conditional_decorator, normalize_text, sort_chronolog
 
 MAX_RESULTS = 10000
 CACHE_LIFETIME = 30
-MAX_WORKERS = 10
 
 existing_playlists_file = f"{appdata_location}/existing_playlists_file.dat"
 last_run_file = f"{appdata_location}/last_run.txt"
@@ -29,7 +28,14 @@ user_cache: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 class Monthify:
     def __init__(
-        self, auth: Auth, SKIP_PLAYLIST_CREATION: bool, LOGOUT: bool, CREATE_PLAYLIST: bool, MAKE_PUBLIC: bool
+        self,
+        auth: Auth,
+        SKIP_PLAYLIST_CREATION: bool,
+        LOGOUT: bool,
+        CREATE_PLAYLIST: bool,
+        MAKE_PUBLIC: bool,
+        REVERSE: bool,
+        MAX_WORKERS: int,
     ):
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
@@ -38,6 +44,14 @@ class Monthify:
         self.sp = authentication.get_spotipy()
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
+        self.REVERSE = REVERSE
+
+        if MAX_WORKERS > 20:
+            raise ValueError("Max workers cannot be greater than 20")
+        if MAX_WORKERS <= 0:
+            raise ValueError("Max workers must be greater than 0")
+
+        self.MAX_WORKERS = MAX_WORKERS
         self.has_created_playlists = False
         self.current_username: str
         self.current_display_name: str
@@ -97,11 +111,35 @@ class Monthify:
         """
 
         logger.info("Starting script execution")
+        logger.debug(
+            """Flags:
+Reverse: {reverse}
+Create playlists: {create_playlists}
+Skip playlist creation: {skip_playlist_creation}
+Make public: {make_public}
+Max Workers: {max_workers}
+Logout: {logout}""",
+            reverse=self.REVERSE,
+            create_playlists=self.CREATE_PLAYLIST,
+            skip_playlist_creation=self.SKIP_PLAYLIST_CREATION,
+            make_public=self.MAKE_PUBLIC,
+            max_workers=self.MAX_WORKERS,
+            logout=self.LOGOUT,
+        )
         console.print(self.name, style="green")
         with console.status("Retrieving user information"):
             self.current_display_name = self.get_username()["display_name"]
             self.current_username = self.get_username()["id"]
-        console.print(f"Username: [cyan]{self.current_display_name}[/cyan]\n")
+        console.print(f"Logged in as [cyan]{self.current_display_name}[/cyan]")
+        console.print(f"Workers: [cyan]{self.MAX_WORKERS}[/cyan]")
+        logger.debug(
+            "Username: {username}",
+            username=self.current_username,
+        )
+        logger.debug(
+            "Display name: {display_name}",
+            display_name=self.current_display_name,
+        )
 
     def update_last_run(self) -> None:
         """
@@ -252,7 +290,7 @@ class Monthify:
                         logger.info(
                             "Playlist name: {name} id: {id}", name=str(month + " '" + year[2:]), id=str(item["id"])
                         )
-        self.playlist_names_with_id = [*set(self.playlist_names_with_id)]
+        self.playlist_names_with_id = sort_chronologically([*set(self.playlist_names_with_id)], self.REVERSE)
 
     def skip(self, status: bool, playlists: Optional[Iterable] = None) -> None:
         """
@@ -267,9 +305,10 @@ class Monthify:
             if playlists is None:
                 RuntimeError("Playlists have not passed been passed to skip function")
             t0 = perf_counter()
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                playlist_names = [str(month + " '" + year[2:]) for month, year in reversed(self.playlist_names)]
-
+            playlist_names = [str(month + " '" + year[2:]) for month, year in reversed(self.playlist_names)]
+            workers = min(self.MAX_WORKERS, len(playlist_names))
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                logger.debug(f"Using {workers} threads to create playlists")
                 logs = executor.map(self.create_playlist, playlist_names)
                 for log in logs:
                     if log is not None:
@@ -435,7 +474,9 @@ class Monthify:
 
         t0 = perf_counter()
         with console.status("Sorting Tracks"):
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            workers = min(self.MAX_WORKERS, len(self.playlist_names_with_id))
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                logger.debug(f"Using {workers} threads to sort tracks into playlists")
                 logs = executor.map(self.sort_tracks_by_month, self.playlist_names_with_id)
                 for log in logs:
                     console.rule(log[0])

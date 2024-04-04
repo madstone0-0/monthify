@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "monthify"
-version = "0.4.9"
+version = "0.4.10"
 description = "Sorts liked spotify tracks into playlists by the month they were liked."
 authors = ["Madiba Hudson-Quansah <mhquansah@gmail.com>"]
 readme = "README.md"

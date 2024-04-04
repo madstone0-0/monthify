@@ -29,6 +29,8 @@ MAKE_PUBLIC = args.public
 SKIP_PLAYLIST_CREATION = args.skip_playlist_creation
 CREATE_PLAYLIST = args.create_playlists
 LOGOUT = args.logout
+REVERSE = args.reverse
+MAX_WORKERS = args.max_workers
 
 if not config.is_using_config_file():
     CLIENT_ID = args.CLIENT_ID
@@ -67,6 +69,8 @@ def run():
             LOGOUT=LOGOUT,
             CREATE_PLAYLIST=CREATE_PLAYLIST,
             MAKE_PUBLIC=MAKE_PUBLIC,
+            REVERSE=REVERSE,
+            MAX_WORKERS=MAX_WORKERS,
         )
 
         t0 = perf_counter()
@@ -94,6 +98,9 @@ def run():
         logger.debug(f"Program completed in {perf_counter() - t0:.2f} s")
     except KeyboardInterrupt:
         console.print("Exiting...")
+    except ValueError as ve:
+        console.print(f"An error occurred: {ve}", style=ERROR)
+        logger.error(f"An error occurred: {ve}")
     except (ConnectionError, ReadTimeout) as e:
         console.print(
             "Cannot connect to Spotify servers, please check your internet connection and try again",
