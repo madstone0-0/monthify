@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 date_data = [
     ("2022-11-23T02:04:46Z", ("November", "2022")),
     ("2022-12-12T02:04:46Z", ("December", "2022")),
@@ -8,6 +10,46 @@ date_data = [
     ("2037-12-12T02:04:46Z", ("December", "2037")),
 ]
 
+mock_data = {
+    "username": {
+        "display_name": "Hudson",
+        "id": "8vx0z9rwpse4fzr62po8sca1r",
+        "uri": "spotify:user:8vx0z9rwpse4fzr62po8sca1r",
+    },
+    "playlists": {
+        "items": [{"name": "December '20", "id": f"{uuid4()}"}, {"name": "August '23", "id": f"{uuid4()}"}],
+        "next": None,
+    },
+    "tracks": {
+        "items": [
+            {
+                "added_at": "2023-08-01T19:48:57Z",
+                "track": {
+                    "id": "2Jkk7UunDLmtxSeHTgar4Z",
+                    "name": "F.V.K. (Fearless Vampire Killers)",
+                    "uri": "spotify:track:2Jkk7UunDLmtxSeHTgar4Z",
+                },
+            },
+            {
+                "added_at": "2023-07-29T08:44:20Z",
+                "track": {
+                    "id": "0YnP5BtP6lTwQV8gLOzaov",
+                    "name": "Banned in D.C.",
+                    "uri": "spotify:track:0YnP5BtP6lTwQV8gLOzaov",
+                },
+            },
+            {
+                "added_at": "2023-07-22T19:38:08Z",
+                "track": {
+                    "id": "3If9Idk1rglOqubIsJcpmv",
+                    "name": "In The Garage",
+                    "uri": "spotify:track:3If9Idk1rglOqubIsJcpmv",
+                },
+            },
+        ],
+        "next": None,
+    },
+}
 
 dataset = [
     "December '20",
@@ -56,7 +98,6 @@ search_data = [
     (dataset, "Middd", False),
     (dataset, "😭", False),
 ]
-
 
 playlist_data = [
     (
