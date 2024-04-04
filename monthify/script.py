@@ -252,7 +252,7 @@ class Monthify:
                         logger.info(
                             "Playlist name: {name} id: {id}", name=str(month + " '" + year[2:]), id=str(item["id"])
                         )
-        self.playlist_names_with_id = [*set(self.playlist_names_with_id)]
+        self.playlist_names_with_id = sort_chronologically([*set(self.playlist_names_with_id)], False)
 
     def skip(self, status: bool, playlists: Optional[Iterable] = None) -> None:
         """
