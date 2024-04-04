@@ -46,6 +46,19 @@ def get_args(config: Config) -> ArgumentParser:
         "--public", default=False, required=False, action="store_true", help="Set created playlists to public"
     )
 
+    parser.add_argument(
+        "--reverse", default=False, required=False, action="store_true", help="Show sort log in reverse order"
+    )
+
+    parser.add_argument(
+        "--max-workers",
+        metavar="max_workers",
+        default=10,
+        type=int,
+        required=False,
+        help="Max number of workers to use for  concurrent requests (default: 10, max: 20)",
+    )
+
     creation_group.add_argument(
         "--skip-playlist-creation",
         default=False,
