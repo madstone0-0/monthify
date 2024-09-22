@@ -42,8 +42,8 @@ class Monthify:
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
         self.logout()
-        authentication = auth
-        self.sp = authentication.get_spotipy()
+        self.auth = auth
+        self.sp = self.auth.get_spotipy()
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
         self.REVERSE = REVERSE
@@ -63,6 +63,7 @@ class Monthify:
         self.already_created_playlists_exists = False
         self.track_map: Dict[str, Tuple[Track]] = {}
         self.async_task_map: Dict[str, Future] = {}
+
         if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
             if (
                 datetime.now() - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
@@ -131,6 +132,10 @@ Logout: {logout}""",
             logout=self.LOGOUT,
         )
         console.print(self.name, style="green")
+
+        # Prime spotify api to check if login is required
+        self.current_display_name = self.get_username()["display_name"]
+
         with console.status("Retrieving user information"):
             self.current_display_name = self.get_username()["display_name"]
             self.current_username = self.get_username()["id"]
