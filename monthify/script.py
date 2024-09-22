@@ -522,8 +522,10 @@ Logout: {logout}""",
                 )
 
             lDiff = len(difference)
+            pS = "s" if lDiff != 1 else ""
+            isAre = "is" if lDiff == 1 else "are"
             console.print(
-                f"Error: {lDiff} playlist{"s" if lDiff != 1 else ""} {"is" if lDiff == 1 else "are"}",
+                f"Error: {lDiff} playlist{pS} {isAre} ",
                 "missing from your account, please use the --create-playlist flag to create them",
                 style=ERROR,
             )
