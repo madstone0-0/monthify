@@ -1,19 +1,19 @@
 # Script
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import datetime
 from os import remove, stat
 from os.path import exists
-from pathlib import Path
 from time import perf_counter
-from typing import Iterable, Iterator, List, Optional, Reversible, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
 
 from monthify import ERROR, SUCCESS, appdata_location, console, logger
 from monthify.auth import Auth
 from monthify.track import Track
-from monthify.utils import conditional_decorator, normalize_text, sort_chronologically
+from monthify.utils import conditional_decorator, format_playlist_name, normalize_text, sort_chronologically
 
 MAX_RESULTS = 10000
 CACHE_LIFETIME = 30
@@ -40,8 +40,8 @@ class Monthify:
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
         self.logout()
-        authentication = auth
-        self.sp = authentication.get_spotipy()
+        self.auth = auth
+        self.sp = self.auth.get_spotipy()
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
         self.REVERSE = REVERSE
@@ -56,30 +56,11 @@ class Monthify:
         self.current_username: str
         self.current_display_name: str
         self.playlist_names: List[Tuple[str, str]]
+        self.playlist_names_id_map: dict[Tuple[str, str], str] = {}
         self.total_tracks_added = 0
         self.already_created_playlists_exists = False
-        if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
-            if (
-                datetime.now() - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
-            ).days >= CACHE_LIFETIME:
-                remove(existing_playlists_file)
-                self.already_created_playlists = set([])
-                self.already_created_playlists_exists = False
-            else:
-                with open(existing_playlists_file, "r", encoding="utf_8") as f:
-                    self.already_created_playlists = set(f.read().splitlines())
-                    self.already_created_playlists_exists = True
-        else:
-            self.already_created_playlists = set([])
-            self.already_created_playlists_exists = False
-
-        if exists(last_run_file) and stat(last_run_file).st_size != 0:
-            with open(last_run_file, "r", encoding="utf_8") as f:
-                self.last_run = f.read()
-        else:
-            self.last_run = ""
-
-        self.playlist_names_with_id: List[Tuple[str, str, str]] = []
+        self.track_map: Dict[str, Tuple[Track]] = {}
+        self.async_task_map: Dict[str, Future] = {}
         self.name = r"""
         ___  ___            _   _     _  __       
         |  \/  |           | | | |   (_)/ _|      
@@ -91,6 +72,40 @@ class Monthify:
                                             |___/ 
         written by [link=https://github.com/madstone0-0]madstone0-0[/link]
         """
+
+        self.load_cache()
+        self.load_last_run()
+
+    def load_last_run(self):
+        if exists(last_run_file) and stat(last_run_file).st_size != 0:
+            with open(last_run_file, "r", encoding="utf_8") as f:
+                self.last_run = f.read()
+        else:
+            self.last_run = ""
+
+    def _reset_cache(self):
+        """
+        Helper function to reset the cache.
+        """
+        self.already_created_playlists = set([])
+        self.already_created_playlists_exists = False
+
+    def load_cache(self):
+        if exists(existing_playlists_file):
+            cache_stat = stat(existing_playlists_file)
+            if cache_stat.st_size != 0:
+                cache_age_days = (datetime.now() - datetime.fromtimestamp(cache_stat.st_ctime)).days
+                if cache_age_days >= CACHE_LIFETIME:
+                    remove(existing_playlists_file)
+                    self._reset_cache()
+                else:
+                    with open(existing_playlists_file, "r", encoding="utf_8") as f:
+                        self.already_created_playlists = set(f.read().splitlines())
+                        self.already_created_playlists_exists = True
+            else:
+                self._reset_cache()
+        else:
+            self._reset_cache()
 
     def logout(self) -> None:
         if self.LOGOUT is True:
@@ -127,6 +142,10 @@ Logout: {logout}""",
             logout=self.LOGOUT,
         )
         console.print(self.name, style="green")
+
+        # Prime spotify api to check if login is required
+        self.current_display_name = self.get_username()["display_name"]
+
         with console.status("Retrieving user information"):
             self.current_display_name = self.get_username()["display_name"]
             self.current_username = self.get_username()["id"]
@@ -212,30 +231,28 @@ Logout: {logout}""",
 
         sp = self.sp
         playlists = self.get_user_saved_playlists()
-        playlists = [normalize_text(item["name"]) for item in playlists]
-        created_playlists = []
+        playlists = {normalize_text(item["name"]) for item in playlists}
         logger.info(f"Playlist creation called {name}")
         t0 = perf_counter()
         log = ""
 
-        for item in playlists:
-            if item == normalize_text(name):
-                log += f"Playlist {name} already exists"
-                self.already_created_playlists.add(name)
-                logger.info(f"Playlist already exists {name}")
-                logger.debug(f"Playlist creation took {perf_counter() - t0} s")
-                return log
+        if normalize_text(name) in playlists:
+            log += f"Playlist {name} already exists"
+            self.already_created_playlists.add(name)
+            logger.info(f"Playlist already exists {name}")
+            logger.debug(f"Playlist creation took {perf_counter() - t0} s")
+            return log
 
-        logger.debug(f"Playlist creation took {perf_counter() - t0} s")
         log += f"\nCreating playlist {name}"
         logger.info(f"Creating playlist {name}")
         playlist = sp.user_playlist_create(
             user=self.current_username, name=name, public=self.MAKE_PUBLIC, collaborative=False, description=f"{name}"
         )
-        created_playlists.append(playlist)
+        logger.debug(f"Playlist creation took {perf_counter() - t0} s")
         log += f"\nAdded {name} playlist\n"
+        if playlist:
+            self.has_created_playlists = True
         logger.info(f"Added {name} playlist")
-        self.has_created_playlists = len(created_playlists) > 0
         return log
 
     def get_saved_track_info(self) -> None:
@@ -270,10 +287,26 @@ Logout: {logout}""",
 
         logger.info("Generating playlist names")
         self.playlist_names = tuple(track.track_month for track in self.get_saved_track_gen())
-        unsorted_playlist_names = [*set(self.playlist_names)]
-        self.playlist_names = sort_chronologically(unsorted_playlist_names)
-        logger.info("Removing duplicate playlist names")
+        self.playlist_names = sort_chronologically(set(self.playlist_names))
         logger.info(f"Final list: {self.playlist_names}")
+
+    def perform_async_tasks(self):
+        """
+        Performs async tasks to speed up script execution
+        """
+        with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
+            self.async_task_map["track_map"] = executor.submit(self.gen_track_map)
+
+    def gen_track_map(self):
+        """
+        Generates a map of tracks to be sorted into monthly playlists
+        """
+        track_map_temp = defaultdict(list)
+        for track in self.get_saved_track_gen():
+            track_map_temp[track.track_month].append(track)
+
+        for month, year in self.playlist_names:
+            self.track_map[f"{month} '{year[2:]}"] = tuple(track_map_temp[(month, year)])
 
     def get_monthly_playlist_ids(self):
         """
@@ -283,14 +316,23 @@ Logout: {logout}""",
         logger.info("Retrieving playlist ids")
         with console.status("Retrieving relevant playlist information"):
             playlists = self.get_user_saved_playlists()
+            normalized_playlists = {normalize_text(item["name"]): item["id"] for item in playlists}
             for month, year in self.playlist_names:
-                for item in playlists:
-                    if normalize_text((month + " '" + year[2:])) == normalize_text(item["name"]):
-                        self.playlist_names_with_id.append((month, year, item["id"]))
-                        logger.info(
-                            "Playlist name: {name} id: {id}", name=str(month + " '" + year[2:]), id=str(item["id"])
-                        )
-        self.playlist_names_with_id = sort_chronologically([*set(self.playlist_names_with_id)], self.REVERSE)
+                playlist_name = format_playlist_name(month, year)
+                norm_name = normalize_text(playlist_name)
+                if norm_name in normalized_playlists:
+                    self.playlist_names_id_map[(month, year)] = normalized_playlists[norm_name]
+                    logger.info(
+                        "Playlist name: {name} id: {id}", name=playlist_name, id=str(normalized_playlists[norm_name])
+                    )
+
+        self.playlist_names_id_map = dict(
+            sorted(
+                self.playlist_names_id_map.items(),
+                key=lambda item: (item[0][1], datetime.strptime(item[0][0], "%B")),
+                reverse=self.REVERSE,
+            )
+        )
 
     def skip(self, status: bool, playlists: Optional[Iterable] = None) -> None:
         """
@@ -303,9 +345,10 @@ Logout: {logout}""",
         else:
             logger.info("Playlist generation starting")
             if playlists is None:
-                RuntimeError("Playlists have not passed been passed to skip function")
+                raise RuntimeError("Playlists must be provided to the skip function")
+
             t0 = perf_counter()
-            playlist_names = [str(month + " '" + year[2:]) for month, year in reversed(self.playlist_names)]
+            playlist_names = tuple(format_playlist_name(month, year) for month, year in reversed(self.playlist_names))
             workers = min(self.MAX_WORKERS, len(playlist_names))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 logger.debug(f"Using {workers} threads to create playlists")
@@ -380,57 +423,62 @@ Logout: {logout}""",
         playlist_items = self.get_playlist_items(playlist_id)
         to_be_added_uris: List[str] = []
 
-        playlist_uris: Iterable[str] = tuple(item["track"]["uri"] for item in playlist_items)
-        log: str = ""
+        playlist_uris: Iterable[str] = {item["track"]["uri"] for item in playlist_items}
+        log: list[str] = []
+
+        def cleanURI(uri: str) -> str:
+            return uri.replace(":", "/").replace("spotify", "spotify.com")
 
         for track in reversed(tracks):
             if track.uri in playlist_uris:
                 logger.info(f"Track: {track} already in playlist: {str(playlist_id)}")
-                track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
-                log += (
+                track_url = f"https://open.{cleanURI(track.uri)}"
+                log.append(
                     "\n"
                     f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link]"
                     " already exists in the playlist"
                 )
             else:
                 logger.info(f"Track: {track} will be added to playlist: {str(playlist_id)}")
-                track_url = f'https://open.{track.uri.replace(":", "/").replace("spotify", "spotify.com")}'
-                log += (
+                track_url = f"https://open.{cleanURI(track.uri)}"
+                log.append(
                     "\n"
                     f"[bold green][+][/bold green]\t[link={track_url}][bold green]{track.title} by {track.artist}"
                     "[/bold green][/link]"
                     " will be added to the playlist "
                 )
                 to_be_added_uris.append(track.uri)
-        log += "\n"
+        log.append("\n")
 
         if not to_be_added_uris:
             logger.info("No tracks to add to playlist: {playlist}", playlist=playlist_id)
-            log += "\t\n"
+            log.append("\t\n")
         else:
             logger.info(
                 "Adding tracks: {tracks} to playlist: {playlist}",
                 tracks=(" ".join(to_be_added_uris)),
                 playlist=playlist_id,
             )
+
             to_be_added_uris_chunks = tuple(to_be_added_uris[x : x + 100] for x in range(0, len(to_be_added_uris), 100))
             for chunk in to_be_added_uris_chunks:
                 self.sp.playlist_add_items(playlist_id=playlist_id, items=chunk)
-            log += "\n"
+            log.append("\n")
             self.total_tracks_added += len(to_be_added_uris)
 
         logger.info("Ended track addition")
-        return log
+        return "".join(log)
 
-    def sort_tracks_by_month(self, playlist: Tuple[str, str, str]) -> List[str]:
-        month, year, playlist_id = playlist
+    def sort_tracks_by_month(self, playlist: Tuple[Tuple[str, str], str]) -> List[str]:
+        (month, year), playlist_id = playlist
+        playlist_name = format_playlist_name(month, year)
+
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
-        playlist_name = f"{month} '{year[2:]}"
         logger.info("Sorting into playlist: {playlist}", playlist=playlist_name)
         log: list[str] = []
 
-        tracks = tuple(track for track in self.get_saved_track_gen() if track.track_month == (month, year))
-        if not tracks:
+        tracks = self.track_map[playlist_name]
+        if not self.track_map:
             return log
         else:
             log.append(f"Sorting into playlist [link={playlist_url}]{playlist_name}[/link]")
@@ -449,36 +497,59 @@ Logout: {logout}""",
         """
 
         log = logger.bind(
-            playlist_names=self.playlist_names_with_id, tracks=[track.title for track in self.get_saved_track_gen()]
+            playlist_names=self.playlist_names_id_map,
+            tracks=[track.title for track in self.get_saved_track_gen()],
         )
 
         log.info("Started sort")
 
         console.print("\nBeginning playlist sort")
         try:
-            if len(self.playlist_names) != len(self.playlist_names_with_id):
-                raise RuntimeError("playlist_names and playlist_names_with_id are not the same length")
+            if len(self.playlist_names) != len(self.playlist_names_id_map.keys()):
+                raise RuntimeError("playlist_names and playlist_names_id_map are not the same length")
         except RuntimeError as error:
             log.error(
-                "playlist_names and playlist_names_with_id are not the same length",
+                "playlist_names and playlist_names_id_map are not the same length",
                 playlist_names_length=self.playlist_names.__len__(),
-                playlist_names_with_id_length=self.playlist_names_with_id.__len__(),
+                playlist_names_id_map_length=self.playlist_names_id_map.__len__(),
                 error=error,
             )
+            difference = set(self.playlist_names_id_map.keys()) - set(self.playlist_names)
+
+            if not difference:
+                difference = set(format_playlist_name(m, y) for m, y in self.playlist_names) - set(
+                    self.playlist_names_id_map.keys()
+                )
+
+            lDiff = len(difference)
             console.print(
-                f"Something has gone wrong error='{error}',"
-                " please run the program again with the --create-playlists flag",
+                f"Error: {lDiff} playlist{"s" if lDiff != 1 else ""} {"is" if lDiff == 1 else "are"}",
+                "missing from your account, please use the --create-playlist flag to create them",
                 style=ERROR,
             )
+            for playlist in difference:
+                console.print(f"Missing playlist: {playlist}")
             sys.exit(1)
 
         t0 = perf_counter()
+        track_map = self.async_task_map["track_map"]
+        if track_map.running() and not track_map.cancelled():
+            with console.status("Waiting for track mapping to finish"):
+                wait([track_map])
+        else:
+            try:
+                track_map.result()
+            except Exception as e:
+                print(e)
+
         with console.status("Sorting Tracks"):
-            workers = min(self.MAX_WORKERS, len(self.playlist_names_with_id))
+            workers = min(self.MAX_WORKERS, len(self.playlist_names_id_map))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 logger.debug(f"Using {workers} threads to sort tracks into playlists")
-                logs = executor.map(self.sort_tracks_by_month, self.playlist_names_with_id)
+                logs = executor.map(self.sort_tracks_by_month, self.playlist_names_id_map.items())
                 for log in logs:
+                    if not log:
+                        continue
                     console.rule(log[0])
                     console.print("".join(log[1:]), end="")
 

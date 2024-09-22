@@ -5,6 +5,7 @@ from time import perf_counter
 
 from appdirs import user_data_dir
 from requests.exceptions import ConnectionError, ReadTimeout
+from spotipy.oauth2 import SpotifyOauthError
 
 from monthify import ERROR, appauthor, appname, console, logger
 from monthify.args import get_args, parse_args
@@ -83,6 +84,9 @@ def run():
         # Generate names of playlists based on month and year saved tracks were added
         controller.get_playlist_names_names()
 
+        # Peform Tasks that can be done asynchronously
+        controller.perform_async_tasks()
+
         # Create playlists based on month and year
         controller.create_monthly_playlists()
 
@@ -107,6 +111,13 @@ def run():
             style=ERROR,
         )
         logger.error(f"Could not connect to Spotify servers, stacktrace:\n{e.strerror}")
+        sys.exit(1)
+    except SpotifyOauthError as soe:
+        console.print(
+            "Spotify authentication error, please check your credentials and try again",
+            style=ERROR,
+        )
+        logger.error(f"Spotify authentication error, stacktrace:\n{soe}")
         sys.exit(1)
 
 

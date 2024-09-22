@@ -22,6 +22,10 @@ def sort_chronologically(playlist_names: Iterable, reverse: bool = True) -> List
     return sorted_list
 
 
+def format_playlist_name(month: str, year: str) -> str:
+    return f"{month} '{year[2:]}"
+
+
 def normalize_text(text: str) -> bytes:
     """Normalize text to lowercase and replace non-ascii characters with xml entities"""
     return str(text).encode("utf-8", errors="xmlcharrefreplace").lower()
