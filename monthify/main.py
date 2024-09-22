@@ -83,6 +83,9 @@ def run():
         # Generate names of playlists based on month and year saved tracks were added
         controller.get_playlist_names_names()
 
+        # Peform Tasks that can be done asynchronously
+        controller.perform_async_tasks()
+
         # Create playlists based on month and year
         controller.create_monthly_playlists()
 

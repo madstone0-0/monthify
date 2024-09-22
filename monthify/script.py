@@ -1,19 +1,21 @@
 # Script
 import sys
-from concurrent.futures import ThreadPoolExecutor
+
+# from collections import OrderedDict
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import datetime
 from os import remove, stat
 from os.path import exists
 from pathlib import Path
 from time import perf_counter
-from typing import Iterable, Iterator, List, Optional, Reversible, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
 
 from monthify import ERROR, SUCCESS, appdata_location, console, logger
 from monthify.auth import Auth
 from monthify.track import Track
-from monthify.utils import conditional_decorator, normalize_text, sort_chronologically
+from monthify.utils import conditional_decorator, format_playlist_name, normalize_text, sort_chronologically
 
 MAX_RESULTS = 10000
 CACHE_LIFETIME = 30
@@ -56,8 +58,11 @@ class Monthify:
         self.current_username: str
         self.current_display_name: str
         self.playlist_names: List[Tuple[str, str]]
+        self.playlist_names_id_map: dict[Tuple[str, str], str] = {}
         self.total_tracks_added = 0
         self.already_created_playlists_exists = False
+        self.track_map: Dict[str, Tuple[Track]] = {}
+        self.async_task_map: Dict[str, Future] = {}
         if exists(existing_playlists_file) and stat(existing_playlists_file).st_size != 0:
             if (
                 datetime.now() - datetime.fromtimestamp(Path(existing_playlists_file).stat().st_ctime)
@@ -79,7 +84,6 @@ class Monthify:
         else:
             self.last_run = ""
 
-        self.playlist_names_with_id: List[Tuple[str, str, str]] = []
         self.name = r"""
         ___  ___            _   _     _  __       
         |  \/  |           | | | |   (_)/ _|      
@@ -275,6 +279,22 @@ Logout: {logout}""",
         logger.info("Removing duplicate playlist names")
         logger.info(f"Final list: {self.playlist_names}")
 
+    def perform_async_tasks(self):
+        """
+        Performs async tasks to speed up script execution
+        """
+        with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
+            self.async_task_map["track_map"] = executor.submit(self.gen_track_map)
+
+    def gen_track_map(self):
+        """
+        Generates a map of tracks to be sorted into monthly playlists
+        """
+        tracks = tuple(track for track in self.get_saved_track_gen())
+        for month, year in self.playlist_names:
+            monthTracks = tuple(filter(lambda track: track.track_month == (month, year), tracks))
+            self.track_map[f"{month} '{year[2:]}"] = monthTracks
+
     def get_monthly_playlist_ids(self):
         """
         Retrieves playlist ids of already created month playlists
@@ -285,12 +305,18 @@ Logout: {logout}""",
             playlists = self.get_user_saved_playlists()
             for month, year in self.playlist_names:
                 for item in playlists:
-                    if normalize_text((month + " '" + year[2:])) == normalize_text(item["name"]):
-                        self.playlist_names_with_id.append((month, year, item["id"]))
-                        logger.info(
-                            "Playlist name: {name} id: {id}", name=str(month + " '" + year[2:]), id=str(item["id"])
-                        )
-        self.playlist_names_with_id = sort_chronologically([*set(self.playlist_names_with_id)], self.REVERSE)
+                    playlist_name = format_playlist_name(month, year)
+                    if normalize_text(playlist_name) == normalize_text(item["name"]):
+                        self.playlist_names_id_map[(month, year)] = item["id"]
+                        logger.info("Playlist name: {name} id: {id}", name=playlist_name, id=str(item["id"]))
+
+        self.playlist_names_id_map = dict(
+            sorted(
+                self.playlist_names_id_map.items(),
+                key=lambda item: (item[0][1], datetime.strptime(item[0][0], "%B")),
+                reverse=self.REVERSE,
+            )
+        )
 
     def skip(self, status: bool, playlists: Optional[Iterable] = None) -> None:
         """
@@ -303,9 +329,9 @@ Logout: {logout}""",
         else:
             logger.info("Playlist generation starting")
             if playlists is None:
-                RuntimeError("Playlists have not passed been passed to skip function")
+                raise RuntimeError("Playlists have not passed been passed to skip function")
             t0 = perf_counter()
-            playlist_names = [str(month + " '" + year[2:]) for month, year in reversed(self.playlist_names)]
+            playlist_names = [format_playlist_name(month, year) for month, year in reversed(self.playlist_names)]
             workers = min(self.MAX_WORKERS, len(playlist_names))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 logger.debug(f"Using {workers} threads to create playlists")
@@ -422,15 +448,16 @@ Logout: {logout}""",
         logger.info("Ended track addition")
         return log
 
-    def sort_tracks_by_month(self, playlist: Tuple[str, str, str]) -> List[str]:
-        month, year, playlist_id = playlist
+    def sort_tracks_by_month(self, playlist: Tuple[Tuple[str, str], str]) -> List[str]:
+        (month, year), playlist_id = playlist
+        playlist_name = format_playlist_name(month, year)
+
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
-        playlist_name = f"{month} '{year[2:]}"
         logger.info("Sorting into playlist: {playlist}", playlist=playlist_name)
         log: list[str] = []
 
-        tracks = tuple(track for track in self.get_saved_track_gen() if track.track_month == (month, year))
-        if not tracks:
+        tracks = self.track_map[playlist_name]
+        if not self.track_map:
             return log
         else:
             log.append(f"Sorting into playlist [link={playlist_url}]{playlist_name}[/link]")
@@ -449,36 +476,59 @@ Logout: {logout}""",
         """
 
         log = logger.bind(
-            playlist_names=self.playlist_names_with_id, tracks=[track.title for track in self.get_saved_track_gen()]
+            playlist_names=self.playlist_names_id_map,
+            tracks=[track.title for track in self.get_saved_track_gen()],
         )
 
         log.info("Started sort")
 
         console.print("\nBeginning playlist sort")
         try:
-            if len(self.playlist_names) != len(self.playlist_names_with_id):
-                raise RuntimeError("playlist_names and playlist_names_with_id are not the same length")
+            if len(self.playlist_names) != len(self.playlist_names_id_map.keys()):
+                raise RuntimeError("playlist_names and playlist_names_id_map are not the same length")
         except RuntimeError as error:
             log.error(
-                "playlist_names and playlist_names_with_id are not the same length",
+                "playlist_names and playlist_names_id_map are not the same length",
                 playlist_names_length=self.playlist_names.__len__(),
-                playlist_names_with_id_length=self.playlist_names_with_id.__len__(),
+                playlist_names_id_map_length=self.playlist_names_id_map.__len__(),
                 error=error,
             )
+            difference = set(self.playlist_names_id_map.keys()) - set(self.playlist_names)
+
+            if not difference:
+                difference = set(format_playlist_name(m, y) for m, y in self.playlist_names) - set(
+                    self.playlist_names_id_map.keys()
+                )
+
+            lDiff = len(difference)
             console.print(
-                f"Something has gone wrong error='{error}',"
-                " please run the program again with the --create-playlists flag",
+                f"Error: {lDiff} playlist{"s" if lDiff != 1 else ""} {"is" if lDiff == 1 else "are"}",
+                "missing from your account, please use the --create-playlist flag to create them",
                 style=ERROR,
             )
+            for playlist in difference:
+                console.print(f"Missing playlist: {playlist}")
             sys.exit(1)
 
         t0 = perf_counter()
+        track_map = self.async_task_map["track_map"]
+        if track_map.running() and not track_map.cancelled():
+            with console.status("Waiting for track mapping to finish"):
+                wait([track_map])
+        else:
+            try:
+                track_map.result()
+            except Exception as e:
+                print(e)
+
         with console.status("Sorting Tracks"):
-            workers = min(self.MAX_WORKERS, len(self.playlist_names_with_id))
+            workers = min(self.MAX_WORKERS, len(self.playlist_names_id_map))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 logger.debug(f"Using {workers} threads to sort tracks into playlists")
-                logs = executor.map(self.sort_tracks_by_month, self.playlist_names_with_id)
+                logs = executor.map(self.sort_tracks_by_month, self.playlist_names_id_map.items())
                 for log in logs:
+                    if not log:
+                        continue
                     console.rule(log[0])
                     console.print("".join(log[1:]), end="")
 
