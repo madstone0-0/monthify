@@ -8,3 +8,4 @@ logs/*
 .idea/*
 dist/*
 tags
+*.m3u8
