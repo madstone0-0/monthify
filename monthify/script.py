@@ -7,6 +7,7 @@ from os import remove, stat
 from os.path import exists
 from pathlib import Path
 from time import perf_counter
+from traceback import format_exc
 from typing import Dict, Iterable, Iterator, List, Optional, Reversible, Tuple
 
 from cachetools import TTLCache, cached
@@ -42,6 +43,7 @@ class Monthify:
         LIBRARY_PATH: str,
         OUTPUT_PATH: str,
         RELATIVE: bool,
+        SORTING_NUMBERS: bool,
     ):
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
@@ -54,6 +56,7 @@ class Monthify:
         self.GENERATE = GENERATE
 
         if self.GENERATE:
+            self.SORTING_NUMBERS = SORTING_NUMBERS
             self.RELATIVE = RELATIVE
             self.LIBRARY_PATH = Path(LIBRARY_PATH)
             self.OUTPUT_PATH = Path(OUTPUT_PATH)
@@ -544,14 +547,22 @@ Logout: {logout}""",
                             f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link]"
                         )
         with console.status(f"Generating playlist files in {self.OUTPUT_PATH}"):
-            for playlist in self.to_be_generated_playlists:
+            for idx, playlist in enumerate(self.to_be_generated_playlists):
                 try:
-                    playlist.generate_m3u(self.OUTPUT_PATH, self.RELATIVE, self.LIBRARY_PATH)
+                    prefix = f"{idx:02}" if self.SORTING_NUMBERS else None
+                    playlist.generate_m3u(
+                        self.OUTPUT_PATH,
+                        self.RELATIVE,
+                        prefix,
+                        self.LIBRARY_PATH,
+                    )
                     log.info(f"Generated playlist file: {playlist.name}")
                     completed += 1
                 except Exception as e:
                     console.print(f"Failed to generate playlist file: {playlist.name}", style=ERROR)
-                    log.error(f"Failed to generate playlist file: {playlist.name}", error=e)
+                    log.error(f"Failed to generate playlist file: {playlist.name}\n{e}")
+                    tb = format_exc()
+                    log.error(f"Traceback:\n{tb}")
                     failed += 1
 
         console.print(f"Completed: {completed} playlists")

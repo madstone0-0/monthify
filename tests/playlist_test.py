@@ -54,6 +54,6 @@ def test_playlist_generate():
         playlist.add(track)
     playlist.find_tracks("/home/mads/Music/Music/")
     out_dir = Path("/home/mads/projects/Python/monthify/tests/test_out")
-    playlist.generate_m3u(out_dir)
+    playlist.generate_m3u(save_path=out_dir)
     file = out_dir / f"{sanitize_generated_playlist_name(playlist.name)}.m3u8"
     assert file.exists()

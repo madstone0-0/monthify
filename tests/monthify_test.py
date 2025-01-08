@@ -27,7 +27,7 @@ class AuthMock:
 
 @pytest.fixture
 def monthify():
-    return Monthify(AuthMock(), True, False, False, False, True, 20)
+    return Monthify(AuthMock(), True, False, False, False, True, 20, False, "", "", False, False)
 
 
 def test_get_display_name(monthify):

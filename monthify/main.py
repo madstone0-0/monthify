@@ -37,6 +37,7 @@ GENERATE = args.generate
 LIBRARY_PATH = ""
 OUTPUT_PATH = ""
 RELATIVE = args.relative
+SORTING_NUMBERS = args.add_sorting_numbers
 if GENERATE:
     if not args.library_path:
         parser.error("--library_path is required when --generate is specified.")
@@ -88,6 +89,7 @@ def run():
             LIBRARY_PATH=LIBRARY_PATH,
             OUTPUT_PATH=OUTPUT_PATH,
             RELATIVE=RELATIVE,
+            SORTING_NUMBERS=SORTING_NUMBERS,
         )
 
         t0 = perf_counter()

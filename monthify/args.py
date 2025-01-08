@@ -85,14 +85,14 @@ def get_args(config: Config) -> ArgumentParser:
     )
 
     generate_group.add_argument(
-        "--library_path",
+        "--library-path",
         metavar="library_path",
         type=str,
         help="Path to your local music library",
     )
 
     generate_group.add_argument(
-        "--output_path",
+        "--output-path",
         metavar="output_path",
         type=str,
         help="Path to save generated playlists",
@@ -104,6 +104,14 @@ def get_args(config: Config) -> ArgumentParser:
         required=False,
         action="store_true",
         help="Use relative paths for playlist generation",
+    )
+
+    generate_group.add_argument(
+        "--add-sorting-numbers",
+        default=False,
+        required=False,
+        action="store_true",
+        help="Add reverse incrementing numbers to the beginning of each playlist name file for alphabetical sorting",
     )
 
     return parser

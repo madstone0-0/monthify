@@ -181,7 +181,13 @@ class Playlist:
         logger.info(f"Finished file search found {len(self.found_items)} out of {len(self.items)} tracks")
         return searchTerms
 
-    def generate_m3u(self, save_path: Path, relative: bool = False, root_path: Optional[Path] = None) -> None:
+    def generate_m3u(
+        self,
+        save_path: Path,
+        relative: bool = False,
+        prefix: Optional[str] = None,
+        root_path: Optional[Path] = None,
+    ) -> None:
         if isinstance(save_path, str):
             save_path = Path(save_path)
 
@@ -190,10 +196,11 @@ class Playlist:
         if relative and root_path is None:
             raise RuntimeError("If relative is set to true a root_path must be suppiled")
         root_path = cast(Path, root_path)
+        prefix = f"{prefix}_" if prefix else ""
 
         try:
             with open(
-                save_path / f"{sanitize_generated_playlist_name(self.name)}.m3u8", mode="+w", encoding="utf-8"
+                save_path / f"{prefix}{sanitize_generated_playlist_name(self.name)}.m3u8", mode="+w", encoding="utf-8"
             ) as f:
                 f.write("#EXTM3U\n")
                 f.write(f"#PLAYLIST:{self.name}\n")
