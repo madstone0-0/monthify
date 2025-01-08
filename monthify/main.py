@@ -11,6 +11,7 @@ from monthify import ERROR, appauthor, appname, console, logger
 from monthify.args import get_args, parse_args
 from monthify.auth import Auth
 from monthify.config import Config
+from monthify.playlist import clear_cache
 from monthify.script import Monthify
 
 appdata_location = user_data_dir(appname, appauthor)
@@ -18,7 +19,7 @@ appdata_location = user_data_dir(appname, appauthor)
 config = Config()
 config_args = config.get_config()
 
-args = parse_args(get_args(config))
+parser, args = parse_args(get_args(config))
 
 VERSION = args.version
 
@@ -32,6 +33,17 @@ CREATE_PLAYLIST = args.create_playlists
 LOGOUT = args.logout
 REVERSE = args.reverse
 MAX_WORKERS = args.max_workers
+GENERATE = args.generate
+LIBRARY_PATH = ""
+OUTPUT_PATH = ""
+RELATIVE = args.relative
+if GENERATE:
+    if not args.library_path:
+        parser.error("--library_path is required when --generate is specified.")
+    if not args.output_path:
+        parser.error("--output_path is required when --generate is specified.")
+    LIBRARY_PATH = args.library_path
+    OUTPUT_PATH = args.output_path
 
 if not config.is_using_config_file():
     CLIENT_ID = args.CLIENT_ID
@@ -72,9 +84,16 @@ def run():
             MAKE_PUBLIC=MAKE_PUBLIC,
             REVERSE=REVERSE,
             MAX_WORKERS=MAX_WORKERS,
+            GENERATE=GENERATE,
+            LIBRARY_PATH=LIBRARY_PATH,
+            OUTPUT_PATH=OUTPUT_PATH,
+            RELATIVE=RELATIVE,
         )
 
         t0 = perf_counter()
+        # Clear database cache
+        clear_cache()
+
         # Starting info
         controller.starting()
 
@@ -95,6 +114,9 @@ def run():
 
         # Add saved tracks to created playlists by month and year
         controller.sort_all_tracks_by_month()
+
+        # Generate local playlists if requested
+        controller.fill_and_generate_all_playlists()
 
         # Update last run time
         controller.update_last_run()

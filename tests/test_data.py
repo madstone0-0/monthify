@@ -27,6 +27,7 @@ mock_data = {
                 "track": {
                     "id": "2Jkk7UunDLmtxSeHTgar4Z",
                     "name": "F.V.K. (Fearless Vampire Killers)",
+                    "artist": "Bad Brains",
                     "uri": "spotify:track:2Jkk7UunDLmtxSeHTgar4Z",
                 },
             },
@@ -35,6 +36,7 @@ mock_data = {
                 "track": {
                     "id": "0YnP5BtP6lTwQV8gLOzaov",
                     "name": "Banned in D.C.",
+                    "artist": "Bad Brains",
                     "uri": "spotify:track:0YnP5BtP6lTwQV8gLOzaov",
                 },
             },
@@ -43,6 +45,7 @@ mock_data = {
                 "track": {
                     "id": "3If9Idk1rglOqubIsJcpmv",
                     "name": "In The Garage",
+                    "artist": "Weezer",
                     "uri": "spotify:track:3If9Idk1rglOqubIsJcpmv",
                 },
             },

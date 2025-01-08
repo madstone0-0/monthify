@@ -5,6 +5,7 @@ from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import datetime
 from os import remove, stat
 from os.path import exists
+from pathlib import Path
 from time import perf_counter
 from typing import Dict, Iterable, Iterator, List, Optional, Reversible, Tuple
 
@@ -12,6 +13,7 @@ from cachetools import TTLCache, cached
 
 from monthify import ERROR, SUCCESS, appdata_location, console, logger
 from monthify.auth import Auth
+from monthify.playlist import Playlist
 from monthify.track import Track
 from monthify.utils import conditional_decorator, format_playlist_name, normalize_text, sort_chronologically
 
@@ -36,6 +38,10 @@ class Monthify:
         MAKE_PUBLIC: bool,
         REVERSE: bool,
         MAX_WORKERS: int,
+        GENERATE: bool,
+        LIBRARY_PATH: str,
+        OUTPUT_PATH: str,
+        RELATIVE: bool,
     ):
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
@@ -45,6 +51,18 @@ class Monthify:
         self.SKIP_PLAYLIST_CREATION = SKIP_PLAYLIST_CREATION
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
         self.REVERSE = REVERSE
+        self.GENERATE = GENERATE
+
+        if self.GENERATE:
+            self.RELATIVE = RELATIVE
+            self.LIBRARY_PATH = Path(LIBRARY_PATH)
+            self.OUTPUT_PATH = Path(OUTPUT_PATH)
+            if not self.LIBRARY_PATH.exists():
+                console.print(f"Error: {self.LIBRARY_PATH} does not exist", style=ERROR)
+                sys.exit(1)
+            if not self.OUTPUT_PATH.exists():
+                console.print(f"Error: {self.OUTPUT_PATH} does not exist", style=ERROR)
+                sys.exit(1)
 
         if MAX_WORKERS > 20:
             raise ValueError("Max workers cannot be greater than 20")
@@ -60,6 +78,7 @@ class Monthify:
         self.total_tracks_added = 0
         self.already_created_playlists_exists = False
         self.track_map: Dict[str, Tuple[Track]] = {}
+        self.to_be_generated_playlists: List[Playlist] = []
         self.async_task_map: Dict[str, Future] = {}
         self.name = r"""
         ___  ___            _   _     _  __       
@@ -410,6 +429,9 @@ Logout: {logout}""",
             with open(existing_playlists_file, "w", encoding="utf_8") as f:
                 f.write("\n".join(self.already_created_playlists))
 
+    def cleanURI(self, uri: str) -> str:
+        return uri.replace(":", "/").replace("spotify", "spotify.com")
+
     def add_to_playlist(self, tracks: Reversible[Track], playlist_id: str) -> str:
         """
         Add a list of tracks to a specified playlist using playlist id
@@ -426,13 +448,10 @@ Logout: {logout}""",
         playlist_uris: Iterable[str] = {item["track"]["uri"] for item in playlist_items}
         log: list[str] = []
 
-        def cleanURI(uri: str) -> str:
-            return uri.replace(":", "/").replace("spotify", "spotify.com")
-
         for track in reversed(tracks):
             if track.uri in playlist_uris:
                 logger.info(f"Track: {track} already in playlist: {str(playlist_id)}")
-                track_url = f"https://open.{cleanURI(track.uri)}"
+                track_url = f"https://open.{self.cleanURI(track.uri)}"
                 log.append(
                     "\n"
                     f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link]"
@@ -440,7 +459,7 @@ Logout: {logout}""",
                 )
             else:
                 logger.info(f"Track: {track} will be added to playlist: {str(playlist_id)}")
-                track_url = f"https://open.{cleanURI(track.uri)}"
+                track_url = f"https://open.{self.cleanURI(track.uri)}"
                 log.append(
                     "\n"
                     f"[bold green][+][/bold green]\t[link={track_url}][bold green]{track.title} by {track.artist}"
@@ -490,6 +509,57 @@ Logout: {logout}""",
             logger.debug(f"Finished adding tracks to playlist: {str(playlist_id)} in {perf_counter() - t0:.2f}s")
             log.append(addedLog)
             return log
+
+    def fill_and_generate_all_playlists(self):
+        if not self.GENERATE:
+            return
+
+        log = logger.bind(
+            playlist_names=self.playlist_names,
+        )
+
+        failed = 0
+        completed = 0
+
+        console.print(f"Starting local playlist generation from library: {self.LIBRARY_PATH}")
+        log.info(f"Starting local playlist generation from library: {self.LIBRARY_PATH}")
+        with console.status("Creating playlists from monthly tracks..."):
+            for month, year in self.playlist_names:
+                name = format_playlist_name(month, year)
+                playlist = Playlist(name)
+                log.info(f"Creating playlist: {name}")
+                tracks = self.track_map[name]
+                playlist.fill(tracks)
+                log.info(f"Filled playlist {name} with {len(tracks)} tracks")
+                self.to_be_generated_playlists.append(playlist)
+
+        with console.status("Finding tracks in library..."):
+            for playlist in self.to_be_generated_playlists:
+                notFound = playlist.find_tracks(self.LIBRARY_PATH)
+                if len(notFound) != 0:
+                    console.print(f"Could not find the following tracks in the library for playlist: {playlist.name}")
+                    for track in notFound:
+                        track_url = f"https://open.{self.cleanURI(track.uri)}"
+                        console.print(
+                            f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link]"
+                        )
+        with console.status(f"Generating playlist files in {self.OUTPUT_PATH}"):
+            for playlist in self.to_be_generated_playlists:
+                try:
+                    playlist.generate_m3u(self.OUTPUT_PATH, self.RELATIVE, self.LIBRARY_PATH)
+                    log.info(f"Generated playlist file: {playlist.name}")
+                    completed += 1
+                except Exception as e:
+                    console.print(f"Failed to generate playlist file: {playlist.name}", style=ERROR)
+                    log.error(f"Failed to generate playlist file: {playlist.name}", error=e)
+                    failed += 1
+
+        console.print(f"Completed: {completed} playlists")
+        console.print(f"Failed: {failed} playlists")
+
+        log.info(f"Completed: {completed} playlists")
+        log.info(f"Failed: {failed} playlists")
+        log.info("Finished generating playlists")
 
     def sort_all_tracks_by_month(self):
         """
