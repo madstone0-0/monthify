@@ -44,6 +44,14 @@ def get_args(config: Config) -> ArgumentParser:
     )
 
     parser.add_argument(
+        "--profile",
+        default=False,
+        required=False,
+        action="store_true",
+        help="Profile the program for debugging purposes",
+    )
+
+    parser.add_argument(
         "--public", default=False, required=False, action="store_true", help="Set created playlists to public"
     )
 
@@ -89,6 +97,14 @@ def get_args(config: Config) -> ArgumentParser:
         metavar="library_path",
         type=str,
         help="Path to your local music library",
+    )
+
+    generate_group.add_argument(
+        "--dont-use-metadata",
+        default=False,
+        required=False,
+        action="store_true",
+        help="Don't use metadata from your local music collection to generate playlists",
     )
 
     generate_group.add_argument(

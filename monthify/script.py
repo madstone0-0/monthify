@@ -1,7 +1,7 @@
 # Script
 import sys
 from collections import defaultdict
-from concurrent.futures import Future, ThreadPoolExecutor, wait
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed, wait
 from datetime import datetime
 from os import remove, stat
 from os.path import exists
@@ -44,6 +44,7 @@ class Monthify:
         OUTPUT_PATH: str,
         RELATIVE: bool,
         SORTING_NUMBERS: bool,
+        USE_METADATA: bool,
     ):
         self.MAKE_PUBLIC = MAKE_PUBLIC
         self.LOGOUT = LOGOUT
@@ -54,6 +55,7 @@ class Monthify:
         self.CREATE_PLAYLIST = CREATE_PLAYLIST
         self.REVERSE = REVERSE
         self.GENERATE = GENERATE
+        self.USE_METADATA = USE_METADATA
 
         if self.GENERATE:
             self.SORTING_NUMBERS = SORTING_NUMBERS
@@ -526,19 +528,21 @@ Logout: {logout}""",
 
         console.print(f"Starting local playlist generation from library: {self.LIBRARY_PATH}")
         log.info(f"Starting local playlist generation from library: {self.LIBRARY_PATH}")
+
         with console.status("Creating playlists from monthly tracks..."):
             for month, year in self.playlist_names:
                 name = format_playlist_name(month, year)
-                playlist = Playlist(name)
+                playlist = Playlist(name, self.MAX_WORKERS)
                 log.info(f"Creating playlist: {name}")
                 tracks = self.track_map[name]
                 playlist.fill(tracks)
                 log.info(f"Filled playlist {name} with {len(tracks)} tracks")
                 self.to_be_generated_playlists.append(playlist)
 
+        t0 = perf_counter()
         with console.status("Finding tracks in library..."):
             for playlist in self.to_be_generated_playlists:
-                notFound = playlist.find_tracks(self.LIBRARY_PATH)
+                notFound = playlist.find_tracks(self.LIBRARY_PATH, not self.USE_METADATA)
                 if len(notFound) != 0:
                     console.print(f"Could not find the following tracks in the library for playlist: {playlist.name}")
                     for track in notFound:
@@ -546,24 +550,39 @@ Logout: {logout}""",
                         console.print(
                             f"[bold red][-][/bold red]\t[link={track_url}][cyan]{track.title} by {track.artist}[/cyan][/link]"
                         )
+        log.debug(f"Took {perf_counter() - t0} to find tracks")
+
+        def generate_one_playlist(playlist: Playlist, prefix: str) -> None:
+            playlist.generate_m3u(
+                self.OUTPUT_PATH,
+                self.RELATIVE,
+                prefix,
+                self.LIBRARY_PATH,
+            )
+            log.info(f"Generated playlist file: {playlist.name}")
+
+        t0 = perf_counter()
         with console.status(f"Generating playlist files in {self.OUTPUT_PATH}"):
-            for idx, playlist in enumerate(self.to_be_generated_playlists):
-                try:
-                    prefix = f"{idx:02}" if self.SORTING_NUMBERS else None
-                    playlist.generate_m3u(
-                        self.OUTPUT_PATH,
-                        self.RELATIVE,
-                        prefix,
-                        self.LIBRARY_PATH,
-                    )
-                    log.info(f"Generated playlist file: {playlist.name}")
-                    completed += 1
-                except Exception as e:
-                    console.print(f"Failed to generate playlist file: {playlist.name}", style=ERROR)
-                    log.error(f"Failed to generate playlist file: {playlist.name}\n{e}")
-                    tb = format_exc()
-                    log.error(f"Traceback:\n{tb}")
-                    failed += 1
+            with ThreadPoolExecutor(self.MAX_WORKERS) as exec:
+                todo = {
+                    exec.submit(
+                        generate_one_playlist, playlist, f"{idx:02}" if self.SORTING_NUMBERS else None
+                    ): playlist.name
+                    for idx, playlist in enumerate(self.to_be_generated_playlists)
+                }
+
+                for job in as_completed(todo):
+                    name = todo[job]
+                    try:
+                        job.result()
+                        completed += 1
+                    except Exception as e:
+                        console.print(f"Failed to generate playlist file: {name}", style=ERROR)
+                        log.error(f"Failed to generate playlist file: {name}\n{e}")
+                        tb = format_exc()
+                        log.error(f"Traceback:\n{tb}")
+                        failed += 1
+        log.debug(f"Took {perf_counter() - t0} to generate playlists")
 
         console.print(f"Completed: {completed} playlists")
         console.print(f"Failed: {failed} playlists")

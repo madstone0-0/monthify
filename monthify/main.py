@@ -1,6 +1,8 @@
 #! /usr/bin/python3
 import sys
+from cProfile import Profile
 from importlib.metadata import version
+from pstats import SortKey, Stats
 from time import perf_counter
 
 from appdirs import user_data_dir
@@ -38,6 +40,8 @@ LIBRARY_PATH = ""
 OUTPUT_PATH = ""
 RELATIVE = args.relative
 SORTING_NUMBERS = args.add_sorting_numbers
+PROF = args.profile
+USE_METADATA = args.dont_use_metadata
 if GENERATE:
     if not args.library_path:
         parser.error("--library_path is required when --generate is specified.")
@@ -67,6 +71,38 @@ if not CLIENT_ID or not CLIENT_SECRET:
 
 def run():
     try:
+
+        def mainLoop(controller: Monthify) -> None:
+            # Clear database cache
+            clear_cache()
+
+            # Starting info
+            controller.starting()
+
+            # Get user saved tracks
+            controller.get_saved_track_info()
+
+            # Generate names of playlists based on month and year saved tracks were added
+            controller.get_playlist_names_names()
+
+            # Peform Tasks that can be done asynchronously
+            controller.perform_async_tasks()
+
+            # Create playlists based on month and year
+            controller.create_monthly_playlists()
+
+            # Retrieve playlist ids of created playlists
+            controller.get_monthly_playlist_ids()
+
+            # Add saved tracks to created playlists by month and year
+            controller.sort_all_tracks_by_month()
+
+            # Generate local playlists if requested
+            controller.fill_and_generate_all_playlists()
+
+            # Update last run time
+            controller.update_last_run()
+
         controller = Monthify(
             Auth(
                 CLIENT_ID=CLIENT_ID,
@@ -79,6 +115,7 @@ def run():
                     "playlist-modify-private",
                 ),
             ),
+            USE_METADATA=USE_METADATA,
             SKIP_PLAYLIST_CREATION=SKIP_PLAYLIST_CREATION,
             LOGOUT=LOGOUT,
             CREATE_PLAYLIST=CREATE_PLAYLIST,
@@ -92,38 +129,17 @@ def run():
             SORTING_NUMBERS=SORTING_NUMBERS,
         )
 
-        t0 = perf_counter()
-        # Clear database cache
-        clear_cache()
+        if PROF:
+            with Profile() as profile:
+                t0 = perf_counter()
 
-        # Starting info
-        controller.starting()
+                mainLoop(controller)
 
-        # Get user saved tracks
-        controller.get_saved_track_info()
+                logger.debug(f"Program completed in {perf_counter() - t0:.2f} s")
+            (Stats(profile).strip_dirs().sort_stats(SortKey.CALLS).dump_stats("profile.stats"))
+        else:
+            mainLoop(controller)
 
-        # Generate names of playlists based on month and year saved tracks were added
-        controller.get_playlist_names_names()
-
-        # Peform Tasks that can be done asynchronously
-        controller.perform_async_tasks()
-
-        # Create playlists based on month and year
-        controller.create_monthly_playlists()
-
-        # Retrieve playlist ids of created playlists
-        controller.get_monthly_playlist_ids()
-
-        # Add saved tracks to created playlists by month and year
-        controller.sort_all_tracks_by_month()
-
-        # Generate local playlists if requested
-        controller.fill_and_generate_all_playlists()
-
-        # Update last run time
-        controller.update_last_run()
-
-        logger.debug(f"Program completed in {perf_counter() - t0:.2f} s")
     except KeyboardInterrupt:
         console.print("Exiting...")
     except ValueError as ve:
